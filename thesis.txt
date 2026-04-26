@@ -1,0 +1,2911 @@
+          硕士学位论文
+
+
+利用变分推断提升 MCMC 算法的效率
+USING THE VARIATIONAL INFERENCE TO
+ IMPROVE THE EFFICIENCY OF MCMC
+           ALGORITHMS
+
+
+
+
+      研   究    生：殷萍萍
+      指 导 教 师：焦熙云助理教授
+
+
+
+              南方科技大学
+          二〇二四年五月
+国内图书分类号：O212.8                   学校代码：14325
+国际图书分类号：519.2                      密级：公开
+
+
+
+
+                 理学硕士学位论文
+
+
+   利用变分推断提升 MCMC 算法的效率
+
+
+
+
+            学 位 申 请 人：殷萍萍
+            指 导 教 师：焦熙云助理教授
+            学 科 名 称：数学
+            答 辩 日 期：2024 年 5 月
+            培 养 单 位：统计与数据科学系
+            学位授予单位：南方科技大学
+Classified Index: O212.8
+U.D.C: 519.2
+
+
+
+
+           Thesis for the degree of Master of Science
+
+
+           USING THE VARIATIONAL
+         INFERENCE TO IMPROVE THE
+            EFFICIENCY OF MCMC
+                ALGORITHMS
+
+
+
+
+          Candidate:          Yin Pingping
+          Supervisor:         Assistant Professor Jiao Xiyun
+          Speciality:         Mathematics
+          Date of Defence:    May, 2024
+          Aﬀiliation:         Department of Statistics and Data Science
+          Degree-Conferring- Southern University of Science and
+          Institution:        Technology
+     学位论文公开评阅人和答辩委员会名单
+
+
+
+           公开评阅人名单
+
+
+           无（全匿名评阅）
+
+
+
+           答辩委员会名单
+
+
+主席   史建清     教授       南方科技大学
+委员    殷鹏    副研究员       华大基因
+      徐匆     讲师       南方科技大学
+秘书   王晓瑞    教辅序列      南方科技大学
+                              摘 要
+
+
+
+
+                             摘 要
+
+    贝叶斯统计基于贝叶斯定理进行推断，然而贝叶斯推断面临的最大挑战是未
+ 知参数的后验分布通常没有明确的解析形式。实际中是用近似方法从数值上估计
+ 后验分布。两种常用的近似方法是马尔可夫链蒙特卡罗（Markov chain Monte Carlo,
+ MCMC）和变分推断（variational inference, VI）。基于采样的 MCMC 方法能保证
+ 产生（渐进）精确的样本，但往往计算量很大。而基于优化的 VI 方法在计算速度
+ 和针对维度的扩展性方面有优势，但结果的准确性没有保证。本研究的目标是结
+ 合 MCMC 与 VI 两类方法，产生一类在性能上能同时兼具两者的新算法。
+    本研究提出的第一个新算法是利用具有不同协方差结构的高斯变分推断
+（Gaussian variational inference, GVI）来估计哈密顿蒙特卡罗（Hamiltonian Monte
+ Carlo, HMC）算法中用于线性变换的预处理矩阵。该方法解决了在高维模型中计
+ 算预处理矩阵困难的问题。本文中对该方法的测试包括从维度和复杂性逐步增加
+ 的目标分布中进行采样。测试结果表明，使用 GVI 生成预处理矩阵的 HMC 在效
+ 率上优于标准的 MCMC 算法。随着目标分布的维度和复杂性增加，这种优势会变
+ 得更加明显。
+    第二个新提出的算法是将基于 VI 的生成模型–变分自动编码器（variational
+ auto-encoder, VAE）和 Metropolis–Hastings（MH）算法相结合，结合的具体方法是
+ 使用 VAE 生成 MH 的提议分布。这种创新的混合方法称为“MH-VAE”算法，与
+ 其他现有的 MCMC 算法相比，它易于执行并且能更有效地探索整个参数空间。使
+ 用峰值相隔较远的多维混合高斯分布和多维混合 t 分布对该方法进行测试的结果
+ 表明，MH-VAE 算法总是能够成功地在多峰分布的所有峰值处采样，而 MH 算法
+ 经常卡在局部峰值处，导致无法收敛。
+
+
+ 关键词：贝叶斯统计；效率；高斯变分推断；马尔科夫链蒙特卡洛；变分自动编码
+        器
+
+
+
+
+                                I
+                                        ABSTRACT
+
+
+
+
+                                    ABSTRACT
+
+     Bayesian statistics makes inference based on Bayes’ theorem, and the biggest chal-
+lenge faced by Bayesian inference is that the posterior distribution of the unknown param-
+eters is typically analytically intractable. In practice, the posterior is estimated numeri-
+cally using approximation methods, and two widely used such methods are Markov Chain
+Monte Carlo (MCMC) and variational inference (VI). Sampling-based MCMC methods
+can guarantee to produce (asymptotically) exact samples, but tend to be computationally
+intense, while optimizing-based VI methods are superior in speed and scalability but may
+suffer from inaccuracy. The goal of this study is to combine the MCMC and VI methods
+and produce a new class of algorithms that incorporate the strengths of both.
+     The first newly proposed algorithm is to utilize Gaussian variational inference (GVI)
+with various covariance structures to derive a preconditioning matrix for the linear trans-
+formation in Hamiltonian Monte Carlo (HMC). This method addresses the challenge
+of computing preconditioning matrices for high-dimensional models. The tests of this
+method include sampling from target distributions of increasing dimensions and com-
+plexity. The results of the tests show that the HMC with preconditioning matrix produced
+by GVI outperforms standard MCMC algorithms in eﬀiciency. This superiority becomes
+more pronounced as the dimension and complexity of the target distribution increases.
+     The second newly proposed algorithm is to combine a VI-based generative model,
+variational auto-encoder (VAE), with the Metropolis–Hastings (MH) sampler, by using
+VAE to produce the proposal distribution of MH. This innovative hybrid method, termed
+the “VAE-MH” sampler, is straightforward to implement and more eﬀicient in travers-
+ing the whole parameter space than state-of-the-art MCMC algorithms. The tests of this
+method using both multi-dimensional mixture Gaussian and mixture t distributions with
+distant modes show that the VAE-MH sampler can always successfully identify all the
+modes of a multi-modal distribution while the MH algorithm often gets trapped in local
+modes and fails to converge.
+
+
+Keywords: Bayesian inference; Eﬀiciency; Gaussian Variational Inference; Markov
+            Chain Monte Carlo; Variational Auto–Encoder
+
+
+                                             II
+                                      TABLE OF CONTENTS
+
+
+
+
+                              TABLE OF CONTENTS
+
+
+摘    要................................................................................................ I
+ABSTRACT........................................................................................ II
+CHAPTER 1         INTRODUCTION ............................................................ 1
+  1.1    Motivation................................................................................. 1
+  1.2    Contribution............................................................................... 2
+  1.3    Thesis Organization ...................................................................... 3
+CHAPTER 2         PRELIMINARIES ........................................................... 4
+  2.1    Markov Chain Monte Carlo ............................................................ 4
+     2.1.1    A brief introduction to Markov Chain............................................ 4
+     2.1.2    Markov Chain Monte Carlo algorithms .......................................... 5
+  2.2    Variational Inference..................................................................... 6
+     2.2.1    A brief introduction to variational inference .................................... 6
+     2.2.2    Mean field variational inference .................................................. 7
+     2.2.3    Fixed form variational inference .................................................. 7
+  2.3    Generative Models ......................................................................11
+  2.4    Related Work.............................................................................12
+     2.4.1    MCMC and VI: bridging the gap ................................................12
+     2.4.2    Using generative models to assist MCMC algorithms ........................13
+CHAPTER 3         METHODOLOGY ..........................................................14
+  3.1    State-of-the-art MCMC Algorithms .................................................14
+     3.1.1    Random-walk Metropolis–Hastings algorithm ................................14
+     3.1.2    Adaptive Metropolis–Hastings algorithm.......................................15
+     3.1.3    Metropolis-adjusted Langevin algorithm .......................................15
+     3.1.4    Hamiltonian Monte Carlo algorithm ............................................16
+  3.2    Estimation of Covariance Matrices ...................................................18
+     3.2.1    Estimate covariance matrix with burn-in sample ..............................18
+     3.2.2    Gaussian variational inference ...................................................18
+  3.3    Linear Transformations in HMC via Gaussian Variational Inference ............24
+
+
+
+
+                                                  III
+                                    TABLE OF CONTENTS
+
+  3.4   Eﬀicient Bayesian Sampling Using VAE to Assist MCMC Methods ............26
+     3.4.1   A brief introduction to variational auto–encoder model ......................26
+     3.4.2   A VAE-assisted MCMC sampler ................................................30
+  3.5   Performance Evaluation Criteria for Algorithms ...................................32
+CHAPTER 4        NUMERICAL STUDIES...................................................34
+  4.1   Compare the Speed and Accuracy of Estimating Gaussian Target via MCMC and
+        GVI........................................................................................34
+  4.2   Linear Transformations in HMC via GVI............................................35
+     4.2.1   Posterior sampling in logistic regression models ..............................35
+     4.2.2   Sampling from a 100-dimensional Gaussian distribution ....................38
+     4.2.3   Posterior sampling in a 509-dimensional GLMM .............................40
+  4.3   Eﬀicient Bayesian Sampling Using the VAE-MH Algorithm .....................43
+     4.3.1   Sampling mixture of Gaussian and mixture of Student t .....................43
+     4.3.2   Sampling from 10-dimensional mixture Gaussian distribution ..............47
+     4.3.3   Sampling from 2-dimensional Gaussian mixture of 20 components........49
+CONCLUSION...................................................................................52
+REFERENCES...................................................................................54
+ACKNOWLEDGEMENTS ....................................................................57
+RESUME AND ACADEMIC ACHIEVEMENTS ........................................58
+
+
+
+
+                                                IV
+                              CHAPTER 1      INTRODUCTION
+
+
+
+
+                     CHAPTER 1               INTRODUCTION
+
+1.1 Motivation
+     Bayesian statistics makes inference based on Bayes’ theorem. Specially, consider the
+model 𝑝(x|𝜽), where x is the data, and 𝜽 is the unknown parameter in the model. Given
+the prior distribution 𝑝(𝜽), by Bayes’s theorem, we obtain the posterior distribution of 𝜽,
+                                𝑝(𝜽)𝑝(x|𝜽)        𝑝(𝜽)𝑝(x|𝜽)
+                       𝑝(𝜽|x) =              =                    .
+                                   𝑝(x)         ∫ 𝑝(𝜽)𝑝(x|𝜽)d𝜽
+However the integral in the denominator is not feasible in practical scenarios. Since the
+posterior distribution plays the central role in Bayesian analysis, approximating the pos-
+terior without doing the integral is the main task of Bayesian inference. Markov Chain
+Monte Carlo (MCMC) and variational inference (VI) are two primary approaches to esti-
+mating posterior distributions. Both approaches have their advantages and disadvantages.
+     MCMC has been the gold standard for sampling from posterior distributions since
+it can guarantee sampling from the exact target distribution. The Metropolis–Hastings
+(MH) [1-2] is one of the most popular MCMC methods. MH generates samples from the
+target distribution by proposing candidates from a proposal distribution and accepting
+them with a probability. The random-walk MH algorithm is particularly attractive due to
+its generality and ease of implementation. However, the proposal distribution of a random-
+walk MH only generates local moves, which travel to the high-density region by chance. If
+the dimension of the target distribution is high, the random-walk MH has low acceptance
+rate, highly correlated samples and its eﬀiciency decreases quickly [3] . In addition, a well-
+known challenge for standard MCMC methods is their poor mixing when dealing with
+multi-modal target distributions with distant modes. Many MCMC algorithms struggle to
+jump over the low-probability region between modes, and may get stuck at one mode.
+     VI is an optimization-based approach to approximating distributions [4-6] . In contrast
+to sampling-based MCMC approaches, VI searches for the optimal distribution that min-
+imizes the distance (typically measured by the Kullback–Leibler (KL) divergence) to the
+target posterior from a set of tractable distributions. Compared to MCMC, VI is much
+less expensive in computation and much more scalable with dimension [7] . However, VI
+can introduce significant bias if all the distributions in the candidate family are far away
+from the target distribution. Thus, the effect of VI highly depends on the choice of the
+
+                                              1
+                                CHAPTER 1   INTRODUCTION
+
+candidate distributions [8] .
+     As stated above, VI and MCMC methods have complementary strengths and weak-
+nesses. Therefore, it is natural to expect that new algorithms with performance better than
+both can be obtained by combining VI and MCMC. However, simply using the VI ap-
+proximation as the proposal distribution of an MH sampler lead to algorithms with poor
+scalability and mixing eﬀiciency [9-11] . In this study, we present two novel approaches to
+combining VI and MCMC, which can truly utilize the strengths of both to generate more
+eﬀicient algorithms.
+
+
+1.2 Contribution
+     The goal of this study is to combine the MCMC with VI methods and produces a
+class of algorithms that incorporate the strengths of both.
+     The first newly proposed algorithm is to utilize Gaussian variational inference (GVI)
+with various covariance structures to derive a preconditioning matrix for the linear trans-
+formation in HMC (Hamiltonian Monte Carlo). Specifically, we consider GVI with
+Cholesky decomposed covariance [12] , GVI with factor decomposed covariance [13] and
+GVI with sparse precision matrices [14] . This method addresses the challenge of comput-
+ing preconditioning matrices for high-dimensional models [3] . The tests of this method in
+this thesis include sampling from target distributions of increasing dimensions and com-
+plexity. The results of the tests show that the HMC with preconditioning matrix produced
+by GVI outperforms standard MCMC algorithms in eﬀiciency. This superiority becomes
+more pronounced as the dimension and complexity of the target distribution increases.
+     The second newly proposed algorithm is to combine VI-based generative model,
+variational auto-encoder (VAE) [15] , with MH [2] sampler, by using VAE to produce the
+proposal distribution of MH. This innovative hybrid method, termed the “VAE-MH” sam-
+pler, is straightforward to implement and more eﬀicient in traversing the whole parameter
+space than state-of-the-art MCMC algorithms. The tests of the method using both multi-
+dimensional mixture Gaussian and mixture 𝑡 distributions with distant modes show that
+the VAE-MH sampler can always successfully identify all the modes of a multi-modal dis-
+tribution while the MH algorithm often gets trapped in local modes and fails to converge.
+
+
+
+
+                                             2
+                              CHAPTER 1     INTRODUCTION
+
+1.3 Thesis Organization
+     The structure of the subsequent chapters is as follows. Chapter 2 includes an overview
+of MCMC algorithms, VI, and generative models. Furthermore, some existing methods
+which show better performance by combining MCMC with VI or generative models are
+also introduced. Chapter 3 introduces the state-of-the-art MCMC algorithms which are
+used in the numerical studies of Chapter 4, outlines the new methods that are proposed
+in this thesis, describes the technique of tuning different algorithms and also the criteria
+used to compare different methods. Chapter 4 contains the numerical studies, and finally
+a summary and some discussions are provided in Conclusion.
+
+
+
+
+                                             3
+                                CHAPTER 2      PRELIMINARIES
+
+
+
+
+                      CHAPTER 2               PRELIMINARIES
+
+     This chapter contains a literature review of the MCMC algorithms, VI, and generative
+models, and also introduces the existing algorithms which exhibit good performance by
+combining these methods.
+
+
+2.1 Markov Chain Monte Carlo
+2.1.1      A brief introduction to Markov Chain
+
+     The MCMC algorithm is named so because the samples generated by it form a
+Markov chain. A sequence of random variables, i.e. , 𝜽(0) , 𝜽(1) , … , 𝜽(𝑇) … is a Markov
+chain if
+
+                    ℙ(𝜽(𝑡+1) ∈ 𝐴|𝜽(0) , … , 𝜽(𝑡) ) = ℙ(𝜽(𝑡+1) ∈ 𝐴|𝜽(𝑡) ),
+
+for each 𝑡, where 𝐴 is a measurable set in the support of 𝜽.
+     An MCMC algorithm is characterized by its transition kernel, that is, 𝐾(𝜽(𝑡+1) |𝜽(𝑡) ),
+which is designed to have the target distribution 𝑝(𝜽) as the stationary distribution of the
+corresponding Markov chain, i.e. ,
+
+                                 𝑝(𝜽′ ) = ∫ 𝐾(𝜽′ |𝜽)𝑝(𝜽)d𝜽.
+
+When converging, MCMC uses the sample mean to approximate the true expectation, i.e.,
+                                                        𝑇
+                                            1
+                              ∫ 𝑔(𝜽)𝑝(𝜽)d𝜽 ≈ ∑ 𝑔(𝜽(𝑡) ),
+                                            𝑇
+                                                        𝑡=1
+
+where g is a 𝑝-integrable function of 𝜽. This is why MCMC is one of the Monte Carlo
+methods.
+     A Markov chain having the following properties can guarantee to have a unique sta-
+tionary distribution and also converge to it [7,16] .
+     （1） Aperiodicity ：the chain does not has any deterministic cycle.
+     （2） Irreducibility: the chain does not “get stuck” in a local region of the sample
+space.
+     （3） Harris recurrence: the chain visits any region of the sample space “suﬀi-
+ciently often”.
+
+
+                                                4
+                              CHAPTER 2     PRELIMINARIES
+
+     Fortunately, the Markov chains produced by most MCMC algorithms own the three
+                                                         1 𝑇
+properties. For such a Markov chain, the sample mean      ∑    𝑔(𝜽(𝑡) ) also converges to
+                                                         𝑇 𝑡=1
+the true expectation ∫ 𝑔(𝜽)𝑝(𝜽)d𝜽 almost surely.
+
+2.1.2    Markov Chain Monte Carlo algorithms
+
+     As stated in Chapter 1, MH is one of the most widely used MCMC methods. The
+Metropolis algorithm (1953) [1,17] was first proposed, and Hasting et al. (1970) [2] gener-
+alized the Metropolis algorithm by allowing the asymmetric in the proposal distribution.
+The Gibbs sampler [18] is another widely used MCMC algorithms. It samples from the tar-
+get distribution by drawing from the conditional distribution of each component variable.
+Each step of a Gibbs sampler can be considered a special MH algorithm with acceptance
+probability 1. While the Gibbs sampler is easy to implement when sampling from a multi-
+dimensional distribution, it has been criticized for slow convergence. In this thesis, we
+focus on the MH-type MCMC algorithms.
+     A common choice for the proposal distribution in MH is a Gaussian or uniform dis-
+tribution around the current state of the Markov chain. The corresponding MH algorithm
+is also called random walk. The random-walk MH algorithm is easy to implement, but
+does not have good mixing properties or scale well with dimension, because the moves it
+proposes are local and random.
+     Many studies for improving the eﬀiciency of the MH algorithm have been concen-
+trated on choosing better proposal distributions. Yang et al. (2013) [19] introduced a novel
+class of Bactrian kernels, which are able to propose samples distant from the current state.
+Based on Yang et al. (2013), Thawornwattana et al. (2018) [20] introduced the “mirror”
+proposal which can lead to Markov chains with negative autocorrelations and super eﬀi-
+ciency. Some MH algorithms incorporate the gradient information of the target distribu-
+tion in the proposal. Both the Metropolis adjusted Langevin algorithm (MALA) [3,21] and
+Hamiltonian Monte Carlo (HMC) [22] are such MH methods. MALA derives the proposal
+from a discretized Langevin diffusion and HMC uses discretized Hamiltonian dynamics to
+propose new values. Both methods are more eﬀicient and scalable than random-walk MH.
+However, tuning the parameters of these methods is a challenge. To address this problem,
+Girolami et al. (2011) [3] introduced Riemann-manifold MALA and HMC, which designs
+MCMC algorithms on the Riemann manifold defined by the target distribution to account
+for its geometric structure. However, Riemann-manifold MCMC algorithm are expensive
+in computation. Hoffman et al. (2014) [23] proposed the No-U-Turn samplers (NUTS), an
+
+                                             5
+                                CHAPTER 2         PRELIMINARIES
+
+extension of HMC that eliminates the necessity of manually tuning the algorithm.
+     In addition, some adaptive MCMC algorithms are invented. For example, Haario et
+al. (2001) [24] introduced the adaptive Metropolis (AM) algorithm, which automatically
+adjusts the covariance matrix of proposal distribution to achieve a desired acceptance rate
+of the MH algorithm.
+     Multi-modal target distributions impose big challenges on the eﬀiciency of the stan-
+dard MCMC algorithms since the latter typically have trouble jumping over low-density
+areas between modes and will get stuck. Several strategies have been proposed to address
+this challenge. One widely used technique is tempering, which heated the multi-modal
+target distribution to flatten the modes. Specifically, the target distribution is raised by a
+power 𝛽 ∈ (0, 1) and samples from the flattened distribution 𝑝(𝜃)𝛽 are facilitated to help
+traverse between modes when sampling from the un-flattened target. Examples include
+parallel tempering [25] and simulated tempering [26] . Other approaches for dealing with
+multi-modal targets include designing special proposal distributions tailored to facilitate
+movement between modes [27] .
+
+
+2.2 Variational Inference
+2.2.1    A brief introduction to variational inference
+
+     Variational inference is a common approach for scalable approximation in Bayesian
+inference, particularly when dealing with large datasets and highly parameterized models.
+This section provides a concise overview of VI. For a more comprehensive review, refer
+to Blei et al. (2017) [6] and Tran et al. (2021) [12] .
+     To approximate the posterior distribution 𝑝(𝜽|x) in Bayesian inference, VI searches
+for the optimal distribution in a distribution family 𝑄 = {𝑞𝝀 (𝜽)} parameterized by 𝝀. The
+optimal distribution is closest to the exact posterior in terms of the KL divergence, that is,
+
+                            𝑞𝝀⋆ (𝜽) = arg min KL(𝑞𝝀 (𝜽)||𝑝(𝜽|x)).
+                                       𝑞𝝀 (𝜽)∈𝑄
+
+The KL divergence between 𝑞𝝀 (𝜽) and 𝑝(𝜽|x) is
+                                            𝑞𝝀 (𝜽)
+          KL(𝑞𝝀 (𝜽))||𝑝(𝜽|x)) = ∫ log              𝑞 (𝜽)d𝜽
+                                            𝑝(𝜽|x) 𝝀
+                                  =𝔼𝑞𝝀 [log 𝑞𝝀 (𝜽)] − 𝔼𝑞𝝀 [log 𝑝(𝜽|x)]
+                                  =𝔼𝑞𝝀 [log 𝑞𝝀 (𝜽)] − 𝔼𝑞𝝀 [log 𝑝(𝜽, x)] + log 𝑝(x),
+where the 𝑝(x) is the marginal likelihood. The KL divergence is asymmetric and always
+
+                                                  6
+                               CHAPTER 2      PRELIMINARIES
+
+non-negative. However, direct computation of the KL divergence is typically impractical
+due to the intractability of 𝑝(x). Thus an alternative objective function called the evidence
+lower bound (ELBO) is adopted. The definition of the ELBO is,
+
+                     ELBO(𝑞𝝀 ) = 𝔼𝑞𝝀 [log 𝑝(𝜽, x)] − 𝔼𝑞𝝀 [log 𝑞𝝀 (𝜽)].
+
+The relationship between marginal likelihood, KL divergence, and ELBO is shown in the
+following formula,
+
+                      log 𝑝(x) = KL(𝑞𝝀 (𝜽)||𝑝(𝜽|x)) + ELBO(𝑞𝝀 ),
+
+and thus ELBO is a lower bound of log 𝑝(x) due to the fact that the KL divergence is
+non-negative, and by maximizing the ELBO, we effectively minimize the KL divergence.
+     VI algorithms can be roughly divided into two main categories, mean-field VI
+(MFVI) and fixed-form VI (FFVI) [12] , which are introduced in the next section.
+
+2.2.2     Mean field variational inference
+
+     For MFVI, we assume that the components of 𝜽 are independent and each is governed
+by a separate density in the variational distribution, i.e.,
+                                               𝑑
+
+                                    𝑞𝝀 (𝜽) = ∏ 𝑞𝝀𝑖 (𝜽𝑖 ).
+                                              𝑖=1
+
+For MFVI, the optimal 𝑞𝝀⋆ (𝜽) can be found by iteratively updating each factor of the vari-
+ational distribution 𝑞𝝀 (𝜽) using coordinate ascent variational inference (CAVI) [6,28] . A
+common choice for 𝑞𝝀𝑖 (𝜽𝑖 ) can be Gaussian distribution.
+     Although MFVI is easy to implement and typically provides accurate estimates of
+the location of the target distribution, it may yield poor estimates of high-order moments
+and miss the correlation between parameters.
+
+2.2.3     Fixed form variational inference
+
+2.2.3.1    Stochastic gradient estimators
+
+     In FFVI, we assume a fixed parametric form for the variational distribution 𝑞, i.e.
+𝑞𝝀 ∈ 𝑄, where 𝑄 is some tractable distribution family. As stated in section 2.2.1, the
+optimal variational distribution 𝑞⋆ is obtained by maximizing the ELBO, i.e.,
+                                                    𝑝(𝜽)𝑝(x|𝜽)
+             LB(𝝀) ∶= ELBO(𝑞𝝀 ) = 𝔼𝑞𝝀 [log                     ] = 𝔼𝑞𝝀 [ℎ𝝀 (𝜽)] ,      (2-1)
+                                                      𝑞𝝀 (𝜽)
+
+
+
+                                               7
+                               CHAPTER 2      PRELIMINARIES
+
+where
+                                            𝑝(𝜽)𝑝(x|𝜽)
+                                ℎ𝝀 (𝜽) ∶= log [        ].                       (2-2)
+                                              𝑞𝝀 (𝜽)
+While some trivial cases allow analytical computation of the evidence lower bound, in
+most situations, stochastic optimization techniques are employed to maximize LB(𝝀). The
+gradient of the ELBO is
+                                         𝑝(𝜽)𝑝(x ∣ 𝜽)
+        ∇𝝀 LB(𝝀) = ∫ ∇𝝀 𝑞𝝀 (𝜽) log                    d𝜽 − ∫ 𝑞𝝀 (𝜽)∇𝝀 log 𝑞𝝀 (𝜽)d𝜽
+                                            𝑞𝝀 (𝜽)
+                        𝛩                                     𝛩
+                                                𝑝(𝜽)𝑝(x ∣ 𝜽)
+                    = ∫ 𝑞𝝀 (𝜽)∇𝝀 log 𝑞𝝀 (𝜽) log              d𝜽 − ∫ ∇𝝀 𝑞𝝀 (𝜽)d𝜽
+                                                   𝑞𝝀 (𝜽)
+                        𝛩                                                𝛩
+                                                    𝑝(𝜽)𝑝(x ∣ 𝜽)
+                    = ∫ 𝑞𝝀 (𝜽)∇𝝀 log 𝑞𝝀 (𝜽) log                  d𝜽 − ∇𝝀 ∫ 𝑞𝝀 (𝜽)d𝜽
+                                                       𝑞𝝀 (𝜽)
+                        𝛩                                                    𝛩
+                                               𝑝(𝜽)𝑝(x ∣ 𝜽)
+                    = 𝔼𝑞𝝀 [∇𝝀 log 𝑞𝝀 (𝜽) × log              ]
+                                                   𝑞𝝀 (𝜽)
+                    = 𝔼𝑞𝝀 [∇𝝀 log 𝑞𝝀 (𝜽) × ℎ𝝀 (𝜽)] ,                                       (2-3)
+
+and FFVI typically employs stochastic gradient ascent (SGA) to maximize the ELBO.
+                                           1 𝑆
+However, the naive gradient estimator       ∑   ∇ log 𝑞𝝀 (𝜽𝑠 ) × ℎ𝝀 (𝜽𝑠 ) where 𝜽1 , … , 𝜽𝑆
+                                           𝑆 𝑠=1 𝝀
+sample from 𝑞𝝀 (𝜽), often exhibit significant variance. This variance arises primarily due
+to the fact that the logarithmic term “log 𝑞𝝀 (𝜽)” tends to amplify small changes. Fortu-
+nately, techniques for reducing the variance of gradient estimators have been introduced,
+including control variates [29-31] and the reparameterization trick [15] . In this thesis, we use
+the reparameterization trick to reduce variance due to its simplicity and effectiveness.
+
+2.2.3.2    Reparameterization trick
+
+     The reparameterization trick [15] reduces the variance of gradient estimator by trans-
+forming the random variable 𝜽 to a deterministic function of a standard random variable 𝝐,
+whose distribution is known. Specifically, 𝜽 = 𝑔(𝝀, 𝝐), with 𝝐 a sample from the distribu-
+tion 𝑝𝝐 (⋅) and 𝜽 ∼ 𝑞𝝀 (⋅). For example, if 𝑞𝝀 (𝜽) follows a normal distribution 𝑁(𝜃|𝜇, 𝜎 2 ),
+then we can reparameterize 𝜃 as 𝜃 = 𝜇 + 𝜎𝜖, where 𝜖 ∼ 𝑁(0, 1). Then LB(𝝀) becomes
+
+                               LB(𝝀) = 𝔼𝝐∼𝑝𝝐 [ℎ𝝀 (𝑔(𝝐, 𝝀))] ,                              (2-4)
+
+where 𝔼𝝐∼𝑝𝝐 (⋅) denotes the expectation with respect to 𝑝𝝐 (⋅). The derivative of LB(𝝀)
+with respect to 𝝀 becomes
+
+              ∇𝝀 LB(𝝀) = 𝔼𝝐∼𝑝𝝐 [∇𝝀 𝑔(𝝀, 𝝐)⊤ ∇𝜽 ℎ𝝀 (𝜽)] + 𝔼𝝐∼𝑝𝝐 [∇𝝀 ℎ𝝀 (𝜽)] ,
+
+                                               8
+                               CHAPTER 2         PRELIMINARIES
+
+where 𝜽 = 𝑔(𝝐, 𝝀), and ∇𝝀 𝑔(𝝀, 𝝐) denotes the Jacobin matrix of dimensions 𝑑𝜽 × 𝑑𝝀
+corresponding to the vector-valued function 𝜽 = 𝑔(𝝀, 𝝐). Note that by manipulating the
+expectation term, we find that
+                   𝔼𝝐∼𝑝𝝐 (∇𝝀 ℎ𝝀 (𝜽)) = 𝔼𝝐∼𝑝𝝐 [∇𝝀 ℎ𝝀 (𝜽 = 𝑔(𝝐, 𝝀))]
+                                        = −𝔼𝝐∼𝑝𝝐 [∇𝝀 log 𝑞𝝀 (𝜽 = 𝑔(𝝐, 𝝀))]
+                                        = −𝔼𝜽∼𝑞𝝀 [∇𝝀 log 𝑞𝜆 (𝜽)] = 0.
+Therefore,
+
+                         ∇𝝀 LB(𝝀) = 𝔼𝝐∼𝑝𝝐 [∇𝝀 𝑔(𝝀, 𝝐)⊤ ∇𝜽 ℎ𝝀 (𝜽)] .                    (2-5)
+
+Then the unbiased estimate of the gradient can be
+                                        𝑆
+                               1
+                      ∇𝝀̂
+                        LB(𝝀) = ∑ ∇𝝀 𝑔(𝝀, 𝝐𝑠 )⊤ ∇𝜽 {ℎ𝝀 [𝑔(𝝀, 𝝐𝑠 )]} ,
+                               𝑆
+                                       𝑠=1
+
+where 𝝐𝑠 ∼ 𝑝𝝐 (⋅), 𝑠 = 1, … , 𝑆.
+
+2.2.3.3     Stochastic gradient variational inference
+
+       For the objective function LB(𝝀), ∇𝝀 LB(𝝀) is its gradient, and ∇𝝀̂
+                                                                         LB(𝝀) is the unbi-
+ased estimator. The SGA [13] algorithm updates the variational parameters at each iteration
+𝑡 by
+                                                      ̂ (𝑡) ),
+                             𝝀(𝑡+1) = 𝝀(𝑡) + 𝝆𝑡 ⊙ ∇𝝀 LB(𝝀
+
+where the symbol ⊙ denotes the Hadamard product of two random vectors, and 𝝆𝑡 repre-
+sent the learning-rate vector, which can change with 𝑡. When training complicated mod-
+els, SGA can get struck in local minima if the learning rate is too small or fail to converge
+if the learning rate is too large. To address these problems, it is advised to use adaptive
+learning rates. Below is a simple adaptive learning-rate algorithm.
+                   ̂ (𝑡) ) and v ∶= (g )2 where the square is a coordinate-wise opera-
+     Let g ∶= ∇ LB(𝝀
+            𝑡     𝝀                𝑡         𝑡
+
+tor, and then
+       （1） initialize g0 , v0 and 𝝀(0) , and set ḡ = g0 , v̄ = v0 . Set adaptive learning
+weights 𝛽1 , 𝛽2 ∈ (0, 1). In our numerical studies, we choose 𝛽1 = 0.9, 𝛽2 = 0.9.
+       （2） for 𝑡 = 0, 1, … , 𝑇, do
+
+                                   ḡ = 𝛽1 ḡ + (1 − 𝛽1 ) g𝑡 ,
+
+                                   v̄ = 𝛽2 v̄ + (1 − 𝛽2 ) v𝑡 ,
+
+
+                                                 9
+                                              CHAPTER 2             PRELIMINARIES
+
+                                                𝝀(𝑡+1) = 𝝀(𝑡) + 𝜌𝑡 g/√
+                                                                    ̄ v,̄
+
+where 𝜌𝑡 is a scalar defined by:
+
+                                                       𝜏      𝜖0 , 𝑡 ⩽ 𝜏,
+                                      𝜌𝑡 = min (𝜖0 , 𝜖0 ) = {
+                                                       𝑡         𝜏
+                                                              𝜖0 , 𝑡 > 𝜏,
+                                                                            𝑡
+with 𝜖0 a small fixed value (e.g., 0.1 or 0.01) and 𝜏 a threshold for the number of iterations.
+When 𝑡 ⩾ 𝜏, the learning rate starts decreasing [12] .
+     Furthermore, the ADADELTA technique [32] , which is a more advanced method for
+adapting learning rates, was utilized in our study. Specifically, the 𝑖th element of 𝝀, 𝜆𝑖 is
+updated at iteration 𝑡 + 1 as
+                                                     (𝑡+1)           (𝑡)    (𝑡)
+                                                    𝜆𝑖        = 𝜆𝑖 + 𝛥𝜆𝑖 .
+                                                    (𝑡)           (𝑡) (𝑡)         (𝑡)
+In this equation, the increment 𝛥𝜆𝑖 = 𝜌𝑖 𝑔𝜆𝑖 , where 𝑔𝜆𝑖 represents the 𝑖th component
+                              ̂(𝑡) ), and 𝜌(𝑡) is
+of the estimated gradient ∇ LB(𝜆          𝜆                          𝑖
+
+                                                             √𝔼(𝛥𝜆2𝑖 )(𝑡−1) + 𝛿
+                                                (𝑡)
+                                               𝜌𝑖        =                        .
+                                                                      (𝑡)
+                                                              √𝔼(𝑔𝜆2 ) + 𝛿
+                                                                    𝑖
+
+                                                                                               (𝑡)
+Here, 𝛿 is a very small positive constant, 𝔼(𝛥𝜆2𝑖 )(𝑡−1) and 𝔼(𝑔𝜆2𝑖 )                                are the decaying av-
+                      2               2
+                (𝑡)             (𝑡)
+erages of 𝛥𝜆𝑖             and 𝑔𝜆𝑖 , respectively, that is [13]
+                                                                                        (𝑡)2
+                               𝔼(𝛥𝜆2𝑖 )(𝑡) = 𝑣𝔼(𝛥𝜆2𝑖 )(𝑡−1) + (1 − 𝑣)𝛥𝜆𝑖                       ,
+
+                                                                                        (𝑡)2
+                                𝔼(𝑔𝜆2𝑖 )(𝑡) = 𝑣𝔼(𝑔𝜆2𝑖 )(𝑡−1) + (1 − 𝑣)𝑔𝜆𝑖 ,
+
+where 0 < 𝑣 < 1 represents a decaying constant. In our numerical studies using the
+GVI with factor decomposed covariance and GVI with sparse precision matrices, we set
+𝛿 = 10−6 , 𝑣 = 0.95 and 𝔼(𝛥𝜆2𝑖 )(0) = 𝔼(𝑔𝜆2𝑖 )(0) = 0.
+
+2.2.3.4   Stopping rule
+
+     The unbiased estimate of the objective function defined in equation (2-1) is
+                                                              𝑆
+                                            1
+                                       ̂ = ∑ ℎ𝝀 (𝜽𝑠 ), 𝜽𝑠 ∼ 𝑞𝝀 (𝜃),
+                                      LB(𝝀)
+                                            𝑆
+                                                             𝑠=1
+
+where ℎ𝝀 (𝜽) is defined in equation (2-2).
+                                              ̂ over a window of 𝑡𝑊 iterations
+     We generally employ a moving average of LB(𝝀)
+                                                                         ̂ by
+                                  ̂ [12] . Denote the moving average of LB(𝝀)
+to address the sampling noise in LB(𝝀)
+
+                                                                    10
+                              CHAPTER 2        PRELIMINARIES
+
+LB(𝝀(𝑡) ) and compute it as
+                                                𝑡𝑊
+                                      1
+                                  (𝑡)
+                            LB(𝝀 ) =      ̂ (𝝀(𝑡−𝑘+1) ) .
+                                        ∑ LB
+                                     𝑡𝑊
+                                               𝑘=1
+
+We keep a record of the maximum LB(𝝀(𝑡) ) so far, denote it as by LBmax , and we stop the
+VI algorithm if LB(𝝀(𝑡) ) falls below LBmax for 𝑃 consecutive times, where 𝑃 is called the
+“patience parameter” [12] . Typical choices for 𝑡𝑊 and 𝑃 are 20 or 50 [12] .
+
+
+2.3 Generative Models
+     Generative models are designed to learn the unknown data distribution using the data
+from that distribution and generate new data that closely resemble the real data. Mathe-
+
+
+
+
+                           Figure 2-1     Generative model learning
+
+matically, the task of generative model is to find a distribution that is closest to the true
+data distribution 𝑝data from a set of candidate distributions parameterized by 𝜃,i.e.,
+
+                                        min 𝑑(𝑝data , 𝑝𝜃 ),
+                                        𝜃∈𝑀
+
+where 𝑑(⋅) represents a measure of distance between probability distributions. In our
+study, we use the new sample drawn by the generative model to produce a proposal dis-
+tribution for MH.
+     Popular generative models are Generative Adversarial Networks (GAN), Variational
+Auto-encoder (VAE), Normalizing flow and diffusion models. See figure 2-2, GAN [33]
+consists of two parts, a generator and a discriminator. Both parts can be neural networks.
+These two parts participate in a competitive game where the generator generates synthetic
+data to fool the discriminator, whose task is then to distinguish real and synthetic data.
+The generator and discriminator are trained simultaneously. If the global equilibrium is
+reached, the distribution of both the generator and the discriminator are equal to the true
+data distribution. Normalizing flow [34] is a generative model designed to convert a simple
+distribution such as the standard normal distribution, into a complex distribution equal to
+
+
+                                                11
+                               CHAPTER 2      PRELIMINARIES
+
+
+
+
+                 Figure 2-2   Overview of different types of generative models
+or very close to the data distribution. This is achieved by a sequence of invertible and
+differentiable transformations. Inspired by non-equilibrium thermodynamics, diffusion
+models [35-36] first use a forward process to add noise to the data until the data becomes pure
+noise. Then diffusion models learn the reverse of the forward process and use the reverse
+process to recover the data distribution. VAE [15] assumes that the data are generated by
+first drawing a latent variable z from its prior distribution 𝑝(z) and then drawing x from
+𝑝𝜽 (x|z) given z. However, the generating process is mostly hidden. Therefore, VAE first
+obtains an approximation 𝑞𝝀 (z|x) of the posterior distribution of z given x, i.e. 𝑝𝜽 (z|x).
+Then VAE treats 𝑞𝝀 (z|x) as the encoder, sample the code z from it and given this code,
+sample new data x from 𝑝𝜽 (x|z), which is in fact the decoder. Since VAE is closely
+related to VI, it is the generative model that we consider when designing new algorithms.
+A detailed introduction of VAE is in section 3.4.1.
+
+
+2.4 Related Work
+2.4.1    MCMC and VI: bridging the gap
+
+     A logical inquiry emerges: is it feasible to merge MCMC and VI to alleviate their
+individual shortcomings and harness the strengths of both? Some attempts have already
+been made in this direction. De Freitas et al. (2001) [11] introduced an approach which
+constructs a new blocked MH algorithm using the variational approximation as the pro-
+posal distribution, and switches between the new MH and a local MH algorithm. This
+                                              12
+                              CHAPTER 2      PRELIMINARIES
+
+strategy allows the quick identification of high-density regions, and at the same time avoids
+getting stuck. Salimans et al. (2015) [37] introduced another approach that combines VI
+and MCMC. They used a few samples of MCMC as auxiliary variables in the variational
+approximation distribution to increase the flexibility of the variational distribution family.
+Another approach incorporating auxiliary variables, called auxiliary variational MCMC,
+was proposed by Habib et al. (2018) [38] . This method introduces auxiliary variables to
+construct a joint distribution with the target distribution as the marginal. VI is then per-
+formed to approximate this joint distribution and finally a new MCMC algorithm sampling
+the joint distribution is constructed using the variational approximation as the proposal.
+This new MCMC is able to avoid the random-walk behavior often encountered in tradi-
+tional MCMC methods and enables more eﬀicient sampling.
+
+2.4.2    Using generative models to assist MCMC algorithms
+
+     The research in this direction so far has mostly been using the generative model to
+construct the proposal distribution of the MH algorithm. Gabrie et al. (2021) [39] used
+the MALA algorithm to train the normalizing flow and used the trained normalizing flow
+to construct the proposal of a new MH algorithm. Hunt-Smith et al. (2024) [40] used the
+random-walk MH to train the diffusion model and then the diffusion model is used to
+construct the proposal distribution for a new MH algorithm. The new MH algorithms of
+both Gabrie et al. (2021) and Hunt-Smith et al. (2024) are eﬀicient in sampling multi-
+modal distributions.
+
+
+
+
+                                             13
+                              CHAPTER 3          METHODOLOGY
+
+
+
+
+                     CHAPTER 3                  METHODOLOGY
+
+     The state of the art MCMC algorithms we will use to develop new algorithms are
+introduced in Section 3.1 and two methods for estimating the covariance matrix are dis-
+cussed in Section 3.2. Two new algorithms which combine VI and MCMC algorithms
+that we proposed are introduced in section 3.3 and section 3.4 respectively. The first new
+algorithm is to utilize GVI with various covariance structures to derive a precondition-
+ing matrix for the linear transformation in HMC. This method addresses the challenge of
+computing preconditioning matrices for high-dimensional models. The second new algo-
+rithm is to combine a VI-based generative model, VAE, with the MH sampler, by using
+VAE to produce the proposal distribution of MH. This innovative hybrid method, termed
+the “MH-VAE” sampler, is straightforward to implement and more eﬀicient in traversing
+the whole parameter space than state-of-the-art MCMC algorithms. In Section 3.5, the
+optimal stepsize of the commonly used MCMC algorithms and the criteria to assess the
+performance of algorithms are introduced.
+
+
+3.1 State-of-the-art MCMC Algorithms
+3.1.1    Random-walk Metropolis–Hastings algorithm
+
+     Given the target distribution 𝑝(⋅) and a proposal distribution 𝑄, each iteration of the
+MH algorithm proceeds as
+     （1） generate 𝜽⋆ ∼ 𝑄(𝜽|𝜽(𝑡) ),
+     （2） calculate the MH acceptance probability,
+                                                𝑝(𝜽⋆ ) 𝑄(𝜽(𝑡) ∣ 𝜽⋆ )
+                       𝛼(𝜽(𝑡) , 𝜽⋆ ) = min {                           , 1} ,
+                                                𝑝(𝜽(𝑡) ) 𝑄(𝜽⋆ ∣ 𝜽(𝑡) )
+     （3） let
+
+                                  𝜽⋆ ,     with probability 𝛼(𝜽(𝑡) , 𝜽⋆ ),
+                     (𝑡+1)
+                   𝜽         ={
+                                  𝜽(𝑡) ,   with probability 1 − 𝛼(𝜽(𝑡) , 𝜽⋆ ).
+As stated in section 2.1.2, for random-walk MH, the proposal distribution is a Gaussian or
+Uniform centered around the current state 𝜽(𝑡) . In multi-dimensional cases, the uniform
+                                                                                       𝑄(𝜽(𝑡) ∣𝜽⋆ )
+kernel can take the form of either a cube or a sphere. Therefore, the Hastings ratio
+                                                                                       𝑄(𝜽⋆ ∣𝜽(𝑡) )
+
+
+
+                                                 14
+                               CHAPTER 3      METHODOLOGY
+
+becomes 1, and thus random-walk MH is in fact a Metropolis algorithm.
+
+3.1.2    Adaptive Metropolis–Hastings algorithm
+
+     In scenarios where setting the tuning parameters in the MH algorithm for a certain
+condition to be satisfied is challenging, we can do the tuning dynamically during the pro-
+cess of running the algorithm. For a Gaussian random-walk MH algorithm, the optimal
+scale matrix for the proposal distribution is (2.382 /𝑑)𝚺 [41] , where 𝚺 is the covariance
+matrix of the parameters. Since 𝚺 is not known in advance, Haario et al. (2001) [24] pro-
+posed an adaptive Metropolis (AM) algorithm to approximate the optimal proposal. The
+proposal distribution used by Haario et al. (2001) has the form
+
+                          𝑄𝑡 (𝜽⋆ ∣ 𝜽) ∼ 𝑁(𝜽, (2.382 /𝑑)𝚺𝑡 + 𝜖I𝑑 ),
+
+where the constant 𝜖 > 0 is some small value to avoid degeneracies, and in the numerical
+studies, we set the 𝜖 = 10−6 . The 𝚺𝑡 is the covariance matrix estimated using the previous
+𝑡 samples 𝜽(𝟏) , ..., 𝜽(𝒕) , and the recursive formula for updating 𝚺𝑡 is
+                                   𝑡
+                          1             (𝑡)         (𝑡)
+                  𝚺𝑡   =     ∑(𝜽(𝑖) − 𝜽̄ )(𝜽(𝑖) − 𝜽̄ )⊤
+                         𝑡−1
+                                  𝑖=1
+                         𝑡−2              1           (𝑡−1)             (𝑡−1) ⊤
+                     =           𝚺𝑡−1 + (𝜽(𝑡) − 𝜽̄          )(𝜽(𝑡) − 𝜽̄      ) ,
+                         𝑡−1              𝑡
+where 𝜽̄ (𝑡) = (𝑡 − 1)/𝑡 𝜽̄ (𝑡−1) + 𝜽(𝑡) /𝑡 is the arithmetic means of the first 𝑡 samples of
+𝜽. Since the changes in scale matrix are negligible as 𝑇 → ∞, the ergodicity of the chain
+is preserved [42] . In our numerical studies, we use this AM algorithm to tune the proposal
+of Gaussian random-walk MH adaptively.
+
+3.1.3    Metropolis-adjusted Langevin algorithm
+
+     The Metropolis adjusted Langevin (MALA) algorithm, introduced by Roberts et al.
+(1998) [43] , constructs a MCMC algorithm by using a discretized Langevin diffusion pro-
+cess to propose new states. By incorporating the gradient information, the MALA al-
+gorithm quickly pushes the Markov chain to regions with high density and explores the
+parameter space more eﬀiciently.
+     A Langevin diffusion with stationary distribution 𝑝(𝜽) is a continuous-time stochas-
+tic process satisfying the following stochastic differential equation [3] ,
+                                     1
+                            d𝜽(𝑡) = ∇𝜽 log 𝑝(𝜽(𝑡) )d𝑡 + dB(𝑡) ,
+                                     2
+
+
+                                               15
+                                CHAPTER 3     METHODOLOGY
+
+where B(𝑡) represents a 𝑑-dimensional standard Brownian motion. In practice, it is nec-
+essary to consider discrete approximations of the Langevin diffusion. One common ap-
+proach is the Euler method, which leads to the following discrete-time stochastic process,
+                                           𝜖2
+                        𝜽(𝑡+1) = 𝜽(𝑡) +       ∇ log 𝑝(𝜽(𝑡) ) + 𝜖 z(t) ,                       (3-1)
+                                           2 𝜽
+                                                    𝑖𝑖𝑑
+for a chosen discretization step 𝜖 > 0, and z(𝑡) ∼ 𝑁(0, I𝑑 ). The discretized Langevin
+diffusion process may not guarantee to converge to 𝑝(𝜽). To address this issue, the MALA
+algorithm takes equation (3-1) as the proposal distribution in the MH algorithm and uses
+the accept / reject step to adjust the samples generated by the discretised process. Thus
+                                                                          𝑄(𝜽(𝑡) ∣𝜽⋆ )
+MALA is an MH algorithm, but not a Metropolis algorithm, since                         ≠ 1.
+                                                                          𝑄(𝜽⋆ ∣𝜽(𝑡) )
+     To solve the problem that the components of 𝜽 have different scales or highly corre-
+lated, a preconditioned version of MALA is proposed, that is
+                                        𝜖2
+                         𝜽 ∣ 𝜽 ∼ 𝑁𝑑 (𝜽 + 𝚺∇𝜽 log 𝑝(𝜽), 𝜖 2 𝚺) ,
+                          ⋆
+                                        2
+where 𝚺 is typically the estimate of the covariance matrix of 𝜽. Let 𝚺 = LL⊤ be the
+Cholesky decomposition of 𝚺. Denote 𝜽̃ = L−1 𝜽 and then
+                                   ̃ = L−1 (LL⊤ )(L−1 )⊤ = I𝑑 .
+                              Var(𝜽)
+
+In other words, the preconditioned MALA is equivalent to the MALA algorithm with the
+orthogonal parametrization.
+
+3.1.4    Hamiltonian Monte Carlo algorithm
+     HMC [22] uses discretized Hamiltonian dynamics to propose new states. Specifically,
+HMC first embeds the target distribution 𝑝(𝜽) into Hamiltonian dynamics,
+
+                                  𝐻(𝜽, 𝝍) = 𝑈(𝜽) + 𝐾(𝝍).                                      (3-2)
+
+Here 𝐻 is the total energy of the system, 𝑈(𝜽) = − log 𝑝(𝜽) is the potential energy
+with 𝜽 called the position variables, and 𝐾(𝝍) is the kinetic energy with 𝝍 the auxiliary
+momentum variable. A common choice for the distribution of 𝝍, 𝑝(𝝍), is a multivariate
+Gaussian with mean zero and covariance matrix M (M is often called the “mass matrix”),
+and then 𝐾(𝝍) = − log 𝑝(𝝍) = 𝝍⊤ M−1 𝝍 / 2. Then the HMC algorithm samples from
+the joint distribution of 𝜽 and 𝝍, i.e.,
+
+        𝑝(𝜽, 𝝍) = exp {−𝐻(𝜽, 𝝍)} = exp {−𝑈(𝜽)} exp {−𝐾(𝝍)} ∝ 𝑝(𝜽)𝑝(𝝍),
+
+where the marginal distribution of 𝜽 is the target.
+
+                                              16
+                                 CHAPTER 3    METHODOLOGY
+
+      The Hamilton’s equations are defined as
+                                      d𝜽   ∂𝐻
+                                         =    = M−1 𝝍,                                (3-3)
+                                      d𝑡   ∂𝝍
+                               d𝝍       ∂𝐻        ∂𝑈
+                                    =−       =−      .                            (3-4)
+                                d𝑡      ∂𝜽       ∂𝜽𝑖
+Thus the gradient of 𝐻(𝜽, 𝝍) with respect to (𝜽, 𝝍) admits a physical interpretation as
+the time evolution of a Hamiltonian dynamic system with respect to fictitious time 𝑡. The
+leapfrog method is typically used to discretize the Hamilton’s equations, and it proceeds
+as follows,
+                                   𝜖          𝜖
+                              𝝍(𝑡 + ) = 𝝍(𝑡) + ∇𝜽 log 𝑝(𝜽(𝑡)),
+                                   2          2
+                                                           𝜖
+                               𝜽(𝑡 + 𝜖) = 𝜽(𝑡) + 𝜖𝑴−1 𝝍(𝑡 + ),
+                                                           2
+                                      𝜖   𝜖
+                      𝝍(𝑡 + 𝜖) = 𝝍(𝑡 + ) + ∇𝜽 log 𝑝(𝜽(𝑡 + 𝜖)),
+                                      2   2
+where 𝜖 is the step size.
+      Then each iteration of the corresponding HMC algorithm includes the following three
+steps.
+      （1） Sample 𝝍 from 𝑝(𝝍).
+      （2） Give the current values of (𝜽, 𝝍), propose new values (𝜽⋆ , 𝝍⋆ ) using the
+Hamiltonian dynamics by applying the leapfrog method for 𝐿 steps, and taking the output
+of the final step as the newly proposed values.
+      （3） Accept (𝜽⋆ , 𝝍⋆ ) with the probability
+
+                          min[1, exp(−𝑈(𝜽⋆ ) + 𝑈(𝜽) − 𝐾(𝝍⋆ ) + 𝐾(𝝍)].
+
+      Reversibility, conservation of total energy, and preservation of volume are funda-
+mental properties of Hamiltonian dynamics. These properties guaranteee that the HMC
+algorithm is reversible, transformation-invariant and with acceptance rate close to 1 [22] .
+As MALA, HMC also incorporates the gradient information of the target distribution. In
+addition, HMC moves multiple steps in the parameter space before accepting or rejecting,
+and thus favoring bigger jumps. HMC now becomes one of the most popular MCMC
+algorithms because of its high eﬀiciency and favorable scalability for high-dimensional
+distributions [44-46] .
+
+
+
+
+                                              17
+                              CHAPTER 3     METHODOLOGY
+
+3.2 Estimation of Covariance Matrices
+3.2.1     Estimate covariance matrix with burn-in sample
+
+     Sample covariance matrix obtained from the burn-in stage of the MCMC algorithm
+is the most straightforward estimate of the target covariance matrix, and the estimate can
+be accurate if the dimension of the target distribution is not too high. We typically run a
+chain of 106 plus a burn-in of 104 iterations in our numerical studies [20] . The motivation
+of using burn-in is to make the chain approximately converge at the end of this phase.
+In fact, if the chain is far from convergence at the end of burn-in, the distribution of the
+subsequent samples may be more biased than expected.
+
+3.2.2     Gaussian variational inference
+
+     Among the different VI approaches, Gaussian variational inference (GVI) is most
+widely used. The GVI tries to find the distribution that closest to the target posterior from
+a Gaussian distribution family. In this section, we will explore several variants of GVI and
+introduce the strength and applications of each.
+
+3.2.2.1    GVI with Cholesky decomposed covariance
+
+     The idea behind GVI with Choleskey Decomposition Covariance (CGVI) is that we
+use the Choleskey decomposition for the covariance matrix 𝚺 of the variational distri-
+bution 𝑞𝝀 (𝜽), expressed as 𝚺 = LL⊤ , where L is a lower triangular matrix. To reduce
+the variance of the naive gradient estimator, here we use the reparameterization trick in-
+troduced in Section 2.2.3.2. Specifically, a sample 𝜽 ∼ 𝑞𝝀 (𝜽) can be parameterized as
+𝜽 = 𝑔(𝝀, 𝝐) = 𝝁 + L𝝐, where 𝝐 ∼ 𝑁𝑑 (0, I𝑑 ), 𝑑 is the dimension of 𝜽 and 𝝀 are the vari-
+ational parameters including the mean 𝝁 and the non-zero elements of L. We can obtain
+that the gradient of the evidence lower bound with respect to the parameter 𝝁 as follows,
+
+                      ∇𝝁 𝐿𝐵(𝝀) = 𝔼𝑞𝝐 [∇𝜽 ℎ𝝀 (𝜽)], with 𝜽 = 𝝁 + L𝝐.                     (3-5)
+
+For the gradient with respect to the parameter L, we introduce some preliminary notations
+in the matrix computations. If C is a matrix of dimension 𝑑 × 𝑑, then the vector vech(C)
+            1
+consists of 𝑑(𝑑 + 1) elements obtained by stacking the columns of the lower triangular
+            2
+part of C. On the other hand, the vector vec(C) is obtained by stacking the columns of
+matrix C from left to right. In addition, C ⊗ D denotes the Kronecker product of matrix
+C and D [12] . Furthermore, for any matrices C, D and X of suitable sizes, we have the
+
+
+                                             18
+                                      CHAPTER 3             METHODOLOGY
+
+property that vec(CXD) = (D⊤ ⊗ C) vec(X) [12] . Using these notations, we get
+
+                               L𝝐 = vec(I𝑑 L𝝐) = (𝝐⊤ ⊗ I𝑑 ) vec(L).
+
+Consequently, we have
+
+                                         ∇vec(L) 𝑔(𝝀, 𝝐) = 𝝐⊤ ⊗ I𝑑 ,
+
+leading to
+                ∇vec(L) LB(𝝀) = 𝔼𝑞𝝐 [∇vec(L) 𝑔(𝝀, 𝝐)⊤ ∇𝜽 ℎ𝝀 (𝜽)]
+                                      = 𝔼𝑞𝝐 [(𝝐 ⊗ I𝑑 ) ∇𝜽 ℎ𝝀 (𝜽)]
+                                      = 𝔼𝑞𝝐 [vec (∇𝜽 ℎ𝝀 (𝜽)𝝐⊤ )] , with 𝜽 = 𝝁 + L𝝐.
+This implies that
+
+                             ∇vech(L) LB(𝝀) = 𝔼𝑞𝝐 [vech(∇𝜽 ℎ𝝀 (𝜽)𝝐⊤ )].                      (3-6)
+
+In conclusion, we arrive at the Cholesky Gaussian variational inference algorithm, referred
+to as CGVI [12] .
+Algorithm 3.1 Cholesky Gaussian variational inference [12]
+ 1: Initialize 𝝀(0) = (𝝁(0) , vech(L(0) )).
+ 2: while stopping rule is not satisfied do:
+ 3:     Generate 𝝐𝑠 ∼ 𝑁(0, I), for 𝑠 = 1, 2, … , 𝑆.
+ 4:                                                                                       ̂ (𝑡) ) =
+        Construct unbiased estimates for the gradient in equations (3-5) and (3-6) as ∇𝝁 LB(𝝀
+    1 𝑆                       ̂             1 𝑆
+      ∑ ∇ ℎ (𝜽𝑠 ), ∇vech(L)    LB(𝝀(𝑡) ) = ∑𝑠=1 vech(∇𝜽 ℎ𝝀 (𝜽𝑠 )𝝐𝒔 ⊤ ), where 𝜽𝑠 = 𝝁(𝑡) +L(𝑡) 𝝐𝑠
+    𝑆 𝑠=1 𝜽 𝝀                              𝑆
+    using samples of {𝝐𝑠 , 𝑠 = 1, … , 𝑆}.
+                     (𝑡) (𝑡)
+ 5:     Set 𝝆(𝑡) = (𝝆𝝁 , 𝝆vech(L) ).
+ 6:
+                                   (𝑡)
+        Update 𝝁(𝑡+1) = 𝝁(𝑡) + 𝝆𝝁 ⊙ ∇𝝁 LB(𝝀   ̂(𝑡) ).
+ 7:     Update vech(L)(𝑡+1) = vech(L)(𝑡) + 𝝆
+                                                (𝑡)
+                                                        ⊙∇       ̂ LB(𝝀(𝑡) ).
+                                                             vech(L)    vech(L)
+             (𝑡+1)          (𝑡+1)               (𝑡+1)
+ 8:    Set 𝝀         = (𝝁           , vech(L)           ), 𝑡 → 𝑡 + 1.
+ 9: end while
+
+
+      In our numerical studies, we set the learning rates 𝝆𝑡 by a simple adaptive-learning
+method introduced in 2.2.3.3 and set 𝛽1 = 0.9, 𝛽2 = 0.9, 𝜖0 = 0.01 and 𝜏 = 1000,
+𝑆 = 100. As described in section 2.2.3.4, we caculate the moving averages of LB, LB,
+keep a record of the maximum LB so far, denoted by LBmax and stop the algorithm if LB
+falls below LB for P consecutive times. In addition, we set the window size of the moving
+average to be 50 and 𝑃 = 50.
+
+
+
+
+                                                            19
+                              CHAPTER 3      METHODOLOGY
+
+3.2.2.2   GVI with factor decomposed covariance
+
+     In the case of CGVI mentioned in section 3.2.2.1, there are 𝑑 + 𝑑 × (𝑑 + 1) / 2
+variational parameters. When the dimension 𝑑 of the variational distribution is large, the
+computational complexity of large matrices and the increased memory requirements will
+limit the use of the CGVI method.
+     Here we introduce an alternative method, GVI with Factor Decomposed Covariance
+(FGVI) which was first proposed by Ong et al. (2018) [13] . The idea behind FGVI is the
+factor decomposition, which is expressed as
+
+                                      𝚺 = BB⊤ + C2 .                                    (3-7)
+
+Here, B represents a factor loading matrix of dimensions 𝑑 × 𝑓, where 𝑓 denotes the num-
+ber of factors, 𝑓 ≪ 𝑑. Additionally, C is a diagonal matrix, that is, C = diag(𝑐1 , ..., 𝑐𝑑 ).
+The number of variational parameters reduces from 𝑑 + 𝑑 × (𝑑 + 1) / 2 for CGVI to
+(𝑓 + 2)𝑑 for FGVI.
+     With factor 𝑓 = 1 in FGVI, Tran et al. (2020) [47] show that it is straightforward to
+derive the natural gradient and the corresponding GVI algorithm. Now the factor decom-
+position of 𝚺 becomes
+
+                               𝚺 = bb⊤ + C2 , C = diag(c),
+
+where b = (𝑏1 , … , 𝑏𝑑 )⊤ and c = (𝑐1 , … , 𝑐𝑑 )⊤ , and the variational parameter is 𝝀 =
+(𝝁⊤ , b⊤ , c⊤ ). Similarly, using the reparameterization trick, 𝜽 ∼ 𝑁(𝝁, 𝚺) can be calculated
+as follows,
+
+                            𝜽 = 𝑔(𝝀, 𝝐) = 𝝁 + 𝝐1 b + c ⊙ 𝝐2 ,
+
+where 𝝐 = (𝝐𝟏 , 𝝐𝟐 ⊤ )⊤ ∼ 𝑁𝑑+1 (0, I). Recall that the reparameterization gradient derived
+in section 2.2.3.2 is
+
+                         ∇𝝀 LB(𝝀) = 𝔼𝝐∼𝑞𝝐 (∇𝝀 𝑔(𝝀, 𝝐)⊤ ∇𝜽 ℎ𝝀 (𝜽)).
+
+Since
+
+                ∇𝝁 𝑔(𝝀, 𝝐) = I𝑑 , ∇b 𝑔(𝝀, 𝝐) = 𝝐1 I𝑑 , ∇c 𝑔(𝝀, 𝝐) = diag(𝝐2 ),
+
+we have the reparameterization gradient for 𝑓 = 1 as follows,
+
+                                       ∇𝜽 ℎ𝝀 (𝝁 + 𝝐1 b + c ⊙ 𝝐2 )
+                                  ⎛                                 ⎞
+                   ∇𝝀 𝐿𝐵(𝝀) = 𝔼𝑞𝝐 ⎜ 𝝐1 ∇𝜽 ℎ𝝀 (𝝁 + 𝝐1 b + c ⊙ 𝝐2 ) ⎟ .
+                                    𝝐2 ⊙ ∇𝜽 ℎ𝝀 (𝝁 + 𝝐1 b + c ⊙ 𝝐2 )
+                                  ⎝                                 ⎠
+                                             20
+                               CHAPTER 3      METHODOLOGY
+
+The gradient of function ℎ𝝀 (𝜽) is
+
+      ∇𝜽 ℎ𝝀 (𝜽) = ∇𝜽 ℎ(𝜽) − ∇𝜽 log 𝑞𝝀 (𝜽) = ∇𝜽 log(𝑝(𝜽)𝑝(𝑦 ∣ 𝜽)) − ∇𝜽 log 𝑞𝝀 (𝜽),
+
+where the first term depends on the target distribution, and the second term is
+∇𝜽 log 𝑞𝝀 (𝜽) = −𝚺 −1 (𝜽 − 𝝁). We can avoid directly computing the inverse 𝚺 −1 based
+                                          1
+on the Woodbury formula “𝚺 −1 = C−2 −            C−2 bb⊤ C−2 ”. Then we get
+                                      1+b⊤ C−2 b
+
+                                   −2
+                                          (b ⊙ c−2 )⊤ (𝜽 − 𝝁)
+       ∇𝜽 log 𝑞𝝀 (𝜽) = −(𝜽 − 𝝁) ⊙ c +                              (b ⊙ c−2 ),
+                                       1 + (b ⊙ c−1 )⊤ (b ⊙ c−1 )
+with c−1 ∶= (1/𝑐1 , … , 1/𝑐𝑑 )⊤ and c−2 ∶= (1/𝑐12 , … , 1/𝑐𝑑2 )⊤ .
+     In some cases, the FGVI algorithm with 𝑓 = 1 may fail to capture the complex
+structure of the target distribution. Therefore, it is necessary to increase the number of
+factors in FGVI. When 𝑓 ≠ 1, to use repaprametrization trick, we draw 𝜽 ∼ 𝑁(𝝁, BB⊤ +
+C2 ) by first drawing 𝜻 = (z⊤ , 𝝐⊤ )⊤ ∼ 𝑞(𝜻), where 𝜻 ∼ 𝑁(0, I), and then we calculate
+𝜽 = 𝑔(𝜻, 𝝀) = 𝝁 + Bz + c ⊙ 𝝐. Thus the gradient of 𝑔(𝜻, 𝝀) becomes
+
+                                        ∇𝝁 𝑔(𝜻, 𝝀) = I,
+
+                                  ∇vec(B) 𝑔(𝜻, 𝝀) = z⊤ ⊗ I.
+
+In addition, in the case of FGVI, ∇𝜽 log 𝑞𝝀 (𝜽) = −(BB⊤ + C2 )−1 (𝜽 − 𝝁), we can obtain
+gradients of the evidence lower bound with respect to 𝝁, B and c as
+
+                     ∇𝝁 LB(𝝀) = 𝔼𝑞𝜻 [∇𝜽 log ℎ(𝝁 + Bz + c ⊙ 𝝐)                       (3-8)
+                                      +(BB⊤ + C2 )−1 (Bz + c ⊙ 𝝐)] ,
+
+                    ∇B LB(𝝀) = 𝔼𝑞𝜻 [∇𝜽 log ℎ(𝝁 + Bz + c ⊙ 𝝐)z⊤                      (3-9)
+                                     +(BB⊤ + C2 )−1 (Bz + c ⊙ 𝝐)z⊤ ] ,
+
+                 ∇c LB(𝝀) = 𝔼𝑞𝜻 [Diag(∇𝜽 log ℎ(𝝁 + Bz + c ⊙ 𝝐)𝝐⊤                   (3-10)
+                                  +(BB⊤ + C2 )−1 (Bz + c ⊙ 𝝐)𝝐⊤ )] .
+
+Here Diag(⋅) represents the vector of diagonal elements in a square matrix and (BB⊤ +
+C2 )−1 can be eﬀiciently computed using the Woodbury formula,
+
+                 (BB⊤ + C2 )−1 = C−2 − C−2 B(I + B⊤ C−2 B)−1 B⊤ C−2 .
+
+Then we can use the SGA algorithm with specific adaptive learning rate method to opti-
+mize the evidence lower bound, leading to the following algorithm, referred to as FGVI.
+
+
+
+                                              21
+                                CHAPTER 3      METHODOLOGY
+
+Algorithm 3.2 GVI with factor decomposed covariance structure [13]
+ 1: Initialize 𝝀(𝟎) = (𝝁(𝟎) , B(0) , c(0) ).
+ 2: while stopping rule is not satisfied do
+ 3:     Generate 𝜻𝑠 ∼ 𝑁(0, I),for 𝑠 = 1, 2, … , 𝑆.
+ 4:     Construct unbiased gradient estimates of gradients in equations (3-9), (3-10) and (3-11)
+    using samples {𝜻𝑠 , 𝑠 = 1, … , 𝑆}.
+                                                 (𝒕)
+ 5:     Set adaptive learning rate 𝝆(𝒕) = (𝝆𝝁 , 𝝆𝑩 (𝑡) , 𝝆𝒄 (𝑡) ) using ADADELTA method which is
+    introduced in section 2.2.3.3 or other methods.
+ 6:     Update 𝝁(𝑡+1) = 𝝁(𝑡) + 𝝆𝝁 (𝑡) ⊙ ∇𝝁 LB(𝝀     ̂(𝑡) ).
+ 7:     Update B(𝑡+1) = B(𝑡) + 𝝆𝑩 (𝑡) ⊙ ∇B LB(𝝀      ̂ (𝑡) ) for elements of B(𝑡+1) on or below the
+                                             (𝑡+1)
+    diagonal, with the upper triangle of B           fixed at zero.
+ 8:     Update c(𝑡+1) = c(𝑡) + 𝝆𝒄 (𝑡) ⊙ ∇c LB(𝝀 ̂(𝑡) ).
+ 9:     Set 𝝀(𝑡+1) = (𝝁(𝑡+1) , B(𝑡+1) , c(𝑡+1) ), 𝑡 → 𝑡 + 1.
+10: end while
+
+
+      In our numerical studies, when the 𝑓 = 1, we set the learning rates 𝝆𝑡 by a simple
+adaptive-learning method introduced in 2.2.3.3 and set 𝛽1 = 0.9, 𝛽2 = 0.9, 𝜖0 = 0.05
+and 𝜏 = 100, 𝑆 = 100 and when the 𝑓 ≠ 1, we set the learning rate by ADADELTA
+method which is introduced in section 2.2.3.3, and we set 𝑣 = 0.95, 𝛿 = 10−6 , 𝑆 = 50.
+As described in section 2.2.3.4, we calculate the moving averages of LB, LB, keep a record
+of the maximum LB so far, denoted by LBmax and stop the algorithm if LB falls below LB
+for P consecutive times. In addition, we set the window size of the moving average to be
+50 and 𝑃 = 50.
+
+3.2.2.3     GVI with sparse precision matrices
+
+      GVI with sparse precision matrices was proposed by Tan et al. (2018) [14] . As-
+sume that the variational approximation distribution 𝑞(⋅) of the target is a multivari-
+ate Gaussian distribution 𝑁(𝝁, 𝛀−1 ), where 𝛀 denotes the precision matrix. Consid-
+ering the decomposition of 𝛀 as 𝛀 = LL⊤ , where L is the Cholesky factor, Tan et
+al. (2018) [14] imposes sparsity on L to achieve conditional independence in 𝛀. Then
+𝑞(𝜽 ∣ 𝝁, L) = |L|𝑓(L⊤ (𝜽 − 𝝁)), with 𝑓 the joint density function of a 𝑑-dimensional
+vector of independent standard Gaussian variables. Then we can obtain the ELBO as
+follows [14] ,
+
+                 LB(𝝁, L) = 𝔼𝑓 [log ℎ(𝝁 + L−⊤ 𝝐) − log 𝑞(𝝁 + L−⊤ 𝝐 ∣ 𝝁, L)]
+                           = 𝔼𝑓 [log ℎ(𝝁 + L−⊤ 𝝐)] − log |L| + 𝐶,
+
+
+
+
+                                                22
+                                          CHAPTER 3         METHODOLOGY
+
+where 𝝐 = L⊤ (𝜽−𝝁) ∼ 𝑓 and 𝐶 is a constant not depending on the variational parameters.
+Since
+
+                                     ∇𝜽 log 𝑞(𝜽) = −LL⊤ (𝜽 − 𝝁) = −L𝝐,
+
+the gradients [14] of ∇𝝁 LB and ∇L LB are
+
+                   ∇𝝁 LB = ∇𝝁 𝔼𝑓 [log ℎ(𝝁 + L−⊤ 𝝐) − log 𝑞(𝝁 + L−⊤ 𝝐)]
+                             = 𝔼𝑓 [∇𝜽 log ℎ(𝝁 + L−⊤ 𝝐) − ∇𝜽 log 𝑞(𝝁 + L−⊤ 𝝐)]
+                             = 𝔼𝑓 [∇𝜽 log ℎ(𝝁 + L−⊤ 𝝐) + L𝝐] ,
+
+        ∇L LB = ∇L 𝔼𝑓 [log ℎ(𝝁 + L−⊤ 𝝐) − log 𝑞(𝝁 + L−⊤ 𝝐)]
+                                                                                ⊤
+                   = −𝔼𝑓 {L−⊤ 𝝐 [∇𝜽 log ℎ(𝝁 + L−⊤ 𝝐) − ∇𝜽 log 𝑞(𝝁 + L−⊤ 𝝐)] L−⊤ }
+                                                                      ⊤
+                   = −𝔼𝑓 {L−⊤ 𝝐 [∇𝜽 log ℎ(𝝁 + L−⊤ 𝝐) + L𝝐] L−⊤ } .
+
+Thus we can obtain the unbiased estimators of ∇𝝁 𝐿 and ∇L 𝐿 as follows,
+
+                                         𝑔̂ 𝝁 = ∇𝜽 log ℎ(𝝁 + L−⊤ 𝝐) + L𝝐,
+                                                                            ⊤
+                            𝑔̂ L = −L−⊤ 𝝐 [∇𝜽 log ℎ(𝝁 + L−⊤ 𝝐) + L𝝐] L−⊤ .
+
+Finally, we can obtain the algorithm of GVI with sparse precision matrices as follows [14] .
+
+
+Algorithm 3.3 GVI with sparse precision matrices [14]
+ 1: Initialize 𝝁(0) = 0, L(0) = I𝑑 and L′(0) = 0.
+ 2: While stopping rule is not satisfied do:
+ 3:    Generate 𝝐 ∼ 𝑁(0, I𝑑 ).
+                                                       −⊤
+ 4:     Calculate 𝜽(𝑡) = 𝝁(𝑡−1) + L(𝑡−1) 𝝐.
+                   (𝑡)
+ 5:     Calculate g𝝁 = ∇𝜽 log ℎ(𝜽(𝑡) ) + L(𝑡−1) 𝝐.
+                                   (𝑡)
+ 6:     Update 𝝁(𝑡) = 𝝁(𝑡−1) + 𝝆𝑡 g𝝁 .
+             (𝑡)                 −⊤               −1 (𝑡) ⊤
+ 7:     Set gL′ = −L(𝑡−1)             𝝐(L(𝑡−1)      g𝝁 ) .
+                     (𝑡)                 (𝑡)             (𝑡−1)
+ 8:     Set diag(gL′ ) = diag(gL′ ) ⊙ diag(L                     ).
+                    ′ (𝑡)     ′ (𝑡)
+ 9:     Update L            =L        + 𝝆𝑡 gL′ (𝑡) .
+                             ′ (𝑡)
+10:   Update L(𝑡) = L .
+                                      (𝑡)
+11:   Update diag(L(𝑡) ) = exp(diag(L′ )).
+12:   𝑡 ⟶ 𝑡 + 1.
+13: end while
+
+
+      In practice, we set the learning rates 𝝆𝑡 by the ADADELTA method introduced in
+section 2.2.3.3. As described in section 2.2.3.4, we caculate the moving averages of LB,
+LB, keep a record of the maximum LB so far, denoted by LBmax and stop the algorithm
+
+
+                                                            23
+                                         CHAPTER 3            METHODOLOGY
+
+if LB falls below LB for P consecutive times. In our numerical study, we set the window
+size of the moving average to be 1000 and P=50.
+
+
+3.3 Linear Transformations in HMC via Gaussian Variational In-
+    ference
+
+         𝜽𝜽~𝑁𝑁 𝟎𝟎, 𝚺𝚺 𝑎𝑎𝑎𝑎𝑎𝑎 𝝍𝝍~𝑁𝑁(𝟎𝟎, 𝚺𝚺 −1 )
+                                                           equivalent dynamics
+                                                  𝑈𝑈(𝜽𝜽)
+
+                                                                                                          𝜽𝜽
+                                    𝝍𝝍           𝜽𝜽
+                                                                                                   𝝍𝝍
+                                                                                                                𝑈𝑈(𝜽𝜽)
+
+
+                                                                                 𝜽𝜽~𝑁𝑁 𝟎𝟎, 𝐈𝐈𝑛𝑛 𝑎𝑎𝑎𝑎𝑎𝑎 𝝍𝝍~𝑁𝑁(𝟎𝟎, 𝐈𝐈𝑛𝑛 )
+
+Figure 3-1 Hamiltonian dynamic with position variables 𝜽 ∼ 𝑁(0, 𝚺) and momentum variables
+𝝍 ∼ 𝑁(0, 𝚺 −1 ) is equivalent to the ideal HMC dynamic where both 𝜽 and 𝝍 have isotropic
+covariance. This equivalence demonstrates that the ideal momentum covariance for HMC is the
+inverse of the covariance of position parameter 𝜽 [48] .
+
+     Hamiltonian dynamics are equivalent under linear transformation. Specifically, if
+the position variables 𝜽 are multiplied by some nonsingular matrix A, provided that si-
+multaneously the corresponding momentum variables 𝝍 being transformed by (A⊤ )−1 ,
+then the new Hamiltonian dynamics will behave equivalently to the original dynamics.
+The phenomenon is illustrated in Figure 3-1.
+     This property can be demonstrated as follows. Consider the linear transformation
+𝜽′ = A𝜽. The probability density for 𝜽′ , denoted by 𝑝′ (𝜽′ ), can be derived as 𝑝′ (𝜽′ ) =
+𝑝(A−1 𝜽′ ) / | det(A)|, where 𝑝(𝜽) = exp {−𝑈(𝜽)}, so that 𝑈 ′ (𝜽′ ) = 𝑈(A−1 𝜽′ ). The
+term log | det(A)| is omitted from the potential energy because it is constant. For the
+distribution of the momentum variable 𝝍, if we adopt the setup described in section 3.1.4,
+i.e., a zero-mean multivariate Gaussian with covariance matrix M, then the kinetic energy
+becomes 𝐾(𝝍) = 𝝍⊤ M−1 𝝍 / 2. We transform 𝝍 using (A⊤ )−1 , i.e., 𝝍′ = (A⊤ )−1 𝝍,
+and then 𝐾 ′ (𝝍′ ) = 𝐾(A⊤ 𝝍′ ) is the new kinetic energy and
+
+𝐾 ′ (𝝍′ ) = (A⊤ 𝝍′ )⊤ M−1 (A⊤ 𝝍′ ) / 2 = (𝝍′ )⊤ (AM−1 A⊤ )𝝍′ / 2 = (𝝍′ )⊤ (M′ )−1 𝝍′ / 2,
+                                                                                                                          (3-11)
+                              ⊤ −1               −1 ⊤
+where M′ = (AM−1 A )                     = (A ) MA−1 . Then the Hamiltonian equations of (𝜽, 𝝍)
+by following the Hamiltonian dynamics of (𝜽′ , 𝝍′ ) become
+        d𝜽       d𝜽′
+           = A−1     = A−1 (M′ )−1 𝝍′ = A−1 (AM−1 A⊤ )(A⊤ )−1 𝝍 = M−1 𝝍,
+        d𝑡        d𝑡
+                                                              24
+                               CHAPTER 3       METHODOLOGY
+
+        d𝝍        𝑑𝝍′
+            = A⊤       = −A⊤ ∇𝑈 ′ (𝜽′ ) = −A⊤ (A−1 )⊤ ∇𝑈(A−1 𝜽′ ) = −∇𝑈(𝜽),
+        d𝑡         d𝑡
+which are same as the Hamiltonian dynamics for (𝜽, 𝝍) in equations (3-3) and (3-4). This
+property can provide us suggestions for implementing HMC if there is prior information
+available regarding the scales and correlations of the variables in the target distribution [22] .
+Therefore, we utilize this property in our new HMC algorithm.
+     Firstly, we use the GVI to derive a Gaussian variational approximation distribution
+𝑞(𝜽) = 𝑁(𝝁, 𝚺) of the target distribution 𝑝(𝜽). Then we use the 𝝁 and 𝚺 in 𝑞(𝜽) to
+facilitate the design of the HMC algorithm for sampling 𝑝(𝜽). We use 𝝁 as the initial
+state of 𝜽 in the algorithm. There are two equivalent approaches to incorporating 𝚺 in the
+HMC. The first approach is to find the Cholesky decomposition, 𝚺 = LL⊤ , where L is
+lower-triangular Choleskey factor, and let 𝜽′ = L−1 𝜽. The new position variables tend to
+be nearly uncorrelated with variance close to one provided that 𝚺 is an accurate estimate of
+the covariance matrix of 𝜽. Thus the potential energy becomes 𝑈 ′ (𝜽′ ) = − log 𝑝′ (𝜽′ ) =
+− log 𝑝(L−1 𝜽) = 𝑈(L−1 𝜽) and then define our kinetic energy to be 𝐾(𝝍) = 𝝍⊤ 𝝍/2,
+that is, the momentum variables are independent. The second approach is to keep the
+original 𝜽 variables so that the potential energy is 𝑈(𝜽) = − log 𝑝(𝜽), but define the
+kinetic energy as 𝐾(𝝍) = 𝝍⊤ 𝚺𝝍 / 2, i.e, the distribution of the momentum variables is
+Gaussian with mean 0 and covariance 𝚺 −1 . We use the second approach in our numerical
+studies. Even when the 𝚺 is not an accurate estimate of the covariance of 𝜽, employing
+this strategy could still improve the performance of HMC, see Neal et al (2010) [22] . Then
+our new HMC algorithm proceeds as Algorithm 3.4 below.
+     In the numerical studies, we compare the eﬀiciency of the HMC algorithms with the
+covariance matrices 𝚺 used for linear transformation estimated from MCMC burn-in sam-
+ples, and estimated using GVI respectively. In addition to deciding the covariance matrix
+M for the momentum variable 𝝍, another challenge in implementing HMC lies in select-
+ing suitable values for 𝜖 and 𝐿. For tuning HMC, it is common to perform preliminary
+runs with trial values. Ideally, we choose such values of 𝜖 and 𝐿 that the state after one
+complete HMC iteration is nearly independent of the previous state [22] , i.e, to tune 𝜖 and
+𝐿 so that 𝜌1 of 𝜽 is approximately equal to 0.
+
+
+
+
+                                               25
+                               CHAPTER 3       METHODOLOGY
+
+Algorithm 3.4 Linear transformation in HMC via GVI
+ 1: Using the GVI to obtain a variational approximation 𝑁(𝝁, 𝚺) of 𝑝(𝜽)
+ 2: Initialize 𝜽 with 𝝁
+ 3: 𝑈(𝜽) = − log 𝑝(𝜽)
+ 4: for 𝑡 = 1 to 𝑇 do
+ 5:     𝝍 ∼ 𝑁(0, 𝚺 −1 )                                                 ▷ momentum variables
+                     ⊤
+ 6:     𝐾(𝝍) = 𝝍 𝚺𝝍 / 2                       ▷ Kinetic energy at the beginning of the trajectory
+ 7:     𝜽⋆ ← 𝜽
+ 8:     𝝍⋆ ← 𝝍 + 𝜖∇𝜽 log 𝑝(𝜽⋆ )/2                           ▷ Half step for momentum variable
+ 9:     for 𝑙 = 1 to 𝐿 do
+10:          𝜽⋆ ← 𝜽⋆ + 𝜖𝚺𝝍⋆                                     ▷ Full step for position variable
+11:          if 𝑙 ≠ 𝐿 then
+12:               𝝍⋆ ← 𝝍⋆ + 𝜖∇𝜽 log 𝑝(𝜽⋆ )
+13:          end if
+14:     end for
+15:     𝝍⋆ ← 𝝍⋆ + 𝜖∇𝜽 log 𝑝(𝜽⋆ )/2                        ▷ Half step for momentum at the end
+16:     𝝍⋆ ← −𝝍⋆                           ▷ Negate momentum to make the proposal symmetric
+17:     𝑈(𝜽⋆ ) = − log 𝑝(𝜽⋆ )
+18:     𝐾(𝝍⋆ ) = 𝝍⋆ 𝚺𝝍⋆ /2
+19:     if runif(1) < exp(𝑈(𝜽) + 𝐾(𝝍) − 𝑈(𝜽⋆ ) − 𝐾(𝝍⋆ )) then
+20:          𝑈(𝜽) ← 𝑈(𝜽⋆ )
+21:          𝜽 ← 𝜽⋆                                                          ▷ Accept the value
+22:     end if
+23: end for
+
+3.4 Eﬀicient Bayesian Sampling Using VAE to Assist MCMC
+    Methods
+3.4.1    A brief introduction to variational auto–encoder model
+
+     Consider a dataset consisting of 𝑁 independent and identically distributed samples,
+                        𝑁
+denoted by x = {x(𝑖) }𝑖=1 , but the true data distribution is unknown. VAE assumes that
+each sample is randomly generated as follows. First, a latent variable z(𝑖) is drawn from
+a prior distribution 𝑝𝜽⋆ (z). Subsequently, x(𝑖) is generated from 𝑝𝜽⋆ (x|z) [15] . The prior
+𝑝𝜽⋆ (𝑧) and the likelihood 𝑝𝜽⋆ (x|z) are supposed to be members of the parametric family
+of distributions {𝑝𝜽 (z) ∶ 𝜽 ∈ 𝜣} and {𝑝𝜽 (x|z) ∶ 𝜽 ∈ 𝜣} respectively, and 𝜽⋆ represents the
+ground truth [15] . However, we are still not able to figure out the data distribution because
+both 𝜽⋆ and z are unknown.
+     VAE considers the posterior distribution of z,
+                                            𝑝𝜽 (z)𝑝𝜽 (x|z)
+                                  𝑝𝜽 (z|x) =               ,
+                                                 𝑝𝜽 (x)
+which is analytically intractable, and aims to find a standard distribution 𝑞𝝀 (z|x) param-
+eterized by 𝝀 to approximate 𝑝𝜽 (z|x) using VI. See a graphical representation of VAE in
+Figure 3-2. Specially, VAE minimizes the KL divergence between 𝑞𝝀 (z|x) and 𝑝𝜽 (z|x).
+
+
+                                               26
+                               CHAPTER 3           METHODOLOGY
+
+
+
+                              𝜙                    𝐙                  𝜃
+
+
+
+
+                                                   𝐗
+                                                             𝑵
+
+
+Figure 3-2 Graphical representation of VAE model. Solid lines denote the generative model
+𝑝𝜽 (z) and 𝑝𝜽 (x|z), while the dashed lines denote the variational approximation 𝑞𝝀 (z|x) of the
+intractable posterior 𝑝𝜽 (z|x) [15] .
+The KL divergence of an individual data point is
+                                                                     𝑝𝜽 (z|x(𝑖) )
+    KL(𝑞𝝀 (z|x(𝑖) )||𝑝𝜽 (z|x(𝑖) )) = − ∑ 𝑞𝝀 (z|x(𝑖) ) log
+                                                                     𝑞𝝀 (z|x(𝑖) )
+                                               z
+                                                               𝑝𝜽 (x(𝑖) ,z)
+                                                                𝑝 (x(𝑖) )
+                                     =   − ∑ 𝑞𝝀 (z|x(𝑖) ) log 𝜽 (𝑖)
+                                                              𝑞𝝀 (z|x )
+                                           z
+                                                              𝑝𝜽 (x(𝑖) , z)
+                                     =   − ∑ 𝑞𝝀 (z|x(𝑖) )[log               − log 𝑝𝜽 (x(𝑖) )].
+                                                              𝑞𝝀 (z|x(𝑖) )
+                                           z
+
+Then we can obtain
+            (𝑖)                    (𝑖)                 (𝑖)
+                                                             𝑝𝜽 (x(𝑖) |z)𝑝𝜽 (z)
+                                                                          (𝑖)
+  log 𝑝𝜽 (x ) = KL(𝑞𝜆 (z|x ) || 𝑝𝜽 (z|x )) + ∑ 𝑞𝜆 (z|x ) log
+                                                                𝑞𝝀 (z|x(𝑖) )
+                                                                 z
+                                   (𝑖)             (𝑖)
+                  = KL(𝑞𝝀 (z|x )||𝑝𝜽 (z|x )) + 𝐿(𝜽, 𝝀; x(𝑖) ).
+
+Since the KL divergence is non-negative,
+
+   log 𝑝𝜽 (x(𝑖) ) ⩾ LB(𝜽, 𝝀; x(𝑖) ) = 𝔼𝑞𝝀 (z|x(𝑖) ) [log(𝑝𝜽 (x(𝑖) , z)) − log(𝑞𝝀 (z|x(𝑖) )] . (3-12)
+
+As introduced in section 2.2.1, minimizing KL is equivalent to maximizing ELBO, and
+the ELBO is
+                   (𝑖)
+                                         𝑝𝜽 (x(𝑖) , z)
+                                         (𝑖)
+        LB(𝜽, 𝝀; x ) = ∑ 𝑞𝝀 (z|x ) log [               ]
+                                         𝑞𝝀 (z|x(𝑖) )
+                               z
+                         = 𝔼𝑞𝝀 (z|x(𝑖) ) [log(𝑝𝜽 (x(𝑖) , z)) − log(𝑞𝝀 (z|x(𝑖) )]                 (3-13)
+                                                                                  𝑝𝜽 (z)
+                         = ∑ 𝑞𝝀 (z|x(𝑖) ) {log(𝑝𝜽 (x(𝑖) |z)) + log(                          }
+                                                                                𝑞𝝀 (z|x(𝑖) )
+                               z
+                         = 𝔼𝑞𝝀 (z|x(𝑖) ) [log(𝑝𝜽 (x(𝑖) |z))] − KL [𝑞𝝀 (z|x(𝑖) )||𝑝𝜽 (z)] , (3-14)
+
+                                                   27
+                                   CHAPTER 3       METHODOLOGY
+
+where the first term in equation (3-14) is the reconstruction loss and the second term is
+the regularization loss. The variational parameter 𝝀 is jointly learned with the generative
+model parameter 𝜽 in VAE.
+     The next step is to calculate the derivatives of the ELBO with respect to 𝝀 and 𝜽
+to derive the gradient descent algorithm for optimizing the ELBO. For the gradient with
+                                                   𝑝𝜽 (z)
+respect to 𝝀, denoting log [𝑝𝜽 (x|z)] +log [               ] by 𝑓(z), we can obtain the Monte Carlo
+                                                  𝑞𝝀 (z|x)
+estimator as
+
+                     ∇𝝀 𝔼𝑞𝝀 (z|x) [𝑓(z)] = 𝔼𝑞𝝀 [𝑓(z)∇𝑞𝝀 (z|x) log 𝑞𝝀 (z|x)]
+                                                  𝐿
+                                             1
+                                           ≈   ∑ [𝑓(z)∇𝑞𝝀 (z|x) log 𝑞𝝀 (z(𝑙)|x )] ,
+                                             𝐿
+                                                 𝑙=1
+        (𝑙)              (𝑖)
+where z       ∼ 𝑞𝝀 (z|𝑥 ).
+     However, this naive estimator has very high variance which is impractical. To address
+the issue above, Kingma and Welling (2013) used the reparametrization trick introduced
+in section 2.2.3.2. Specifically, we obtain a sample z from 𝑞𝝀 (z|x) by first sampling 𝝐
+from a fixed distribution 𝑝(𝝐) and then applying a differentiable transformation 𝑔𝝀 on 𝝐,
+that is, 𝝐 ∼ 𝑝(𝝐) and z = 𝑔𝝀 (𝝐, x). Then 𝔼𝑞𝝀 (z|x) [𝑓(z(𝑖) )] becomes
+
+                           𝔼𝑞𝝀 (z|x) [𝑓(z(𝑖) )] = 𝔼𝑝(𝝐) [𝑓(𝑔𝝀 (𝝐, x(𝑖) ))] ,
+
+and the gradient of variational lower bound with respect to 𝝀 becomes
+
+                       ∇𝝀 𝔼𝑞𝝀 (z|x) [𝑓(z(𝑖) )] = ∇𝝀 𝔼𝑝(𝜖) [𝑓(𝑔𝝀 (𝝐, x(𝑖) ))]
+                                                = 𝔼𝑝(𝝐) [∇𝝀 𝑓(𝑔𝝀 (𝝐, x(𝑖) ))]
+                                                           𝐿
+                                                  1
+                                                ≈   ∑ ∇𝝀 𝑓(𝑔𝝀 (𝝐(𝑖,𝑙) , x(𝑖) )),
+                                                  𝐿
+                                                           𝑙=1
+
+where 𝝐(𝑖,𝑙) ∼ 𝑝(𝝐).
+     We can also apply the reparametrization trick to estimate the ELBO in equation
+(3-13), that is,
+                                      𝐿
+                 1             1
+              ̃ (𝜽, 𝝀; x(𝑖) ) = ∑ [log 𝑝𝜽 (x(𝑖) , z(𝑖,𝑙) ) − log 𝑞𝝀 (z(𝑖,𝑙) |x(𝑖) )] ,
+              LB                                                                            (3-15)
+                               𝐿
+                                     𝑙=1
+                                                                 1
+                                                       ̃ (𝜽, 𝝀; x(𝑖) ) is called the stochas-
+where z(𝑖,𝑙) = 𝑔𝝀 (𝝐(𝑖,𝑙) , x(𝑖) ), 𝝐(𝑖,𝑙) ∼ 𝑝(𝝐), and LB
+tic gradient Variational Bayes (SGVB) estimator of the ELBO. If KL(𝑞𝝀 (z|x)||𝑝𝜽 (z)) in
+equation (3-14) can be derived analytically, such that only the reconstruction loss requires
+
+
+                                                      28
+                                   CHAPTER 3       METHODOLOGY
+
+to be estimated by sampling, then the SGVB estimator for the ELBO becomes
+                                      𝐿
+           2           1
+        ̃ (𝜽, 𝝀; x ) =
+        LB           (𝑖)
+                         ∑ log [𝑝𝜽 (x(𝑖) ∣ z(𝑖,𝑙) )] − KL(𝑞𝝀 (z|x(𝑖) )||𝑝𝜽 (z)), (3-16)
+                       𝐿
+                                     𝑙=1
+
+where z(𝑖,𝑙) = 𝑔𝝀 (𝝐(𝑖,𝑙) , x(𝑖) ) and 𝝐(𝑖,𝑙) ∼ 𝑝(𝝐), typically has smaller variance.
+     Moreover, we can construct an estimator of the ELBO of the full dataset using the
+minibatches, i.e.,
+                                                              𝑀
+                                          𝑀              𝑁
+                               ̃ (𝜽, 𝝀; x𝑀 ) =
+                 LB(𝜽, 𝝀; x) ≃ LB                            ̃
+                                                           ∑ LB(𝜽, 𝝀; x(𝑖) ),           (3-17)
+                                                         𝑀
+                                                             𝑖=1
+                           𝑀
+where the x𝑀 = {x(𝑖) }𝑖=1 is a subset randomly drawn from the full dataset.
+     In VAE, the prior distribution for z is typically chosen as 𝑝𝜽 (z) = 𝑁(z|0, I), and
+𝑝𝜽 (x|z) is specified as either a multivariate Gaussian (for real-valued data) or a Bernoulli
+distribution (for binary data), with parameters derived from z via a multi-layer percep-
+tron (MLP, a fully-connected neural network). The variational approximate distribution
+is assumed to be a multivariate Gaussian with diagonal covariance structure，i.e.,
+
+                               log 𝑞𝝀 (z|x(𝑖) ) = log 𝑁(z; 𝝁(𝑖) , 𝝈2(𝑖) I).
+
+Here, 𝝁(𝑖) and 𝝈(𝑖) are outputs of an MLP, in fact nonlinear functions of the data point
+x(𝑖) and the variational parameters 𝝀. With the specification above, the KL divergence in
+equation (3-14) can be computed analytically. Thus, the estimator of the ELBO becomes
+                       𝐽                                                      𝐿
+              1             (𝑖)       (𝑖)       (𝑖)    1
+           (𝑖)
+LB(𝜽, 𝝀; x ) ≃ ∑(1 + log((𝜎𝑗 )2 ) − (𝜇𝑗 )2 − (𝜎𝑗 )2 ) + ∑ log 𝑝𝜽 (x(𝑖) |z(𝑖,𝑙) ),
+              2                                        𝐿
+                     𝑗=1                                                      𝑙=1
+                                                                                        (3-18)
+where z(𝑖,𝑙) = 𝝁(𝒊) + 𝝈(𝑖) ⊙ 𝝐(𝑙) and 𝝐(𝑙) ∼ 𝑁(0, I).
+     With the reparameterization trick applied in VAE, the Monte Carlo estimate of the
+ELBO is differentiable with respect to 𝝀 [15] , and the back-propagation technique in neural
+networks enables the effective training of model parameters 𝝀 and 𝜽.
+     As introduced in Section 2.3, the variational approximation 𝑞𝝀 (z|x) is called the
+encoder while the likelihood 𝑝𝜽 (x|z) is the decoder. Note that the encoder and decoder
+in VAE are probabilistic. VAE generates new data that approximately follows the true
+distribution by first generating a code z from the encoder and given the code, generating
+a sample from the decoder.
+
+
+
+
+                                                   29
+                              CHAPTER 3     METHODOLOGY
+
+3.4.2    A VAE-assisted MCMC sampler
+
+     Standard MCMC methods using local proposal distributions, which are centered
+around the current state, mix poorly when sampling from the multi-modal target distri-
+butions with distant modes, since these methods can hardly jump over the low-density
+region between distant modes and typically end up getting stuck in one mode. There-
+fore, novel MCMC algorithms which can eﬀiciently jump between modes are required for
+sampling the multi-modal distributions.
+     Inspired by Gabie et al. (2021) and Hunt-Smith et al. (2024) [39-40] , here we propose
+a novel MCMC sampler called “VAE-MH”, which combines the Gaussian random-walk
+MH algorithm with the VAE model. Specifically, we first train the VAE model to produce
+a new proposal distribution, use this proposal to produce a new MH algorithm, and switch
+between the new algorithm and the original random-walk MH within the whole algorithm.
+Note that in this process we constantly re-train the VAE model to update the new proposal
+so that the corresponding MH algorithm becomes better and better in performance. The
+primary advantage of this new MCMC sampler is the global nature of its proposed values
+so that it is not easy for the algorithm to get stuck in a local area. We now give a detailed
+description of how to combine the VAE model with the random-walk MH to produce the
+new MH algorithm.
+                                                                      𝑇
+     To train the VAE model, we typically use the samples {𝜽(𝑡) }𝑡=1
+                                                                  0
+                                                                     that generated by
+the preliminary runs of the Gaussian random-walk MH. However, for special cases, such
+as multi-modal target distributions with distant modes, Gaussian random-walk MH may
+fail to collect the information about all the modes. In such cases, we can first use some
+optimization methods to identify the approximate locations of all the modes, run multiple
+Gaussian random-walk MH preliminary chains initiated at these different modes respec-
+tively, and use the samples generated by all the chains to train the VAE model. Recall
+the training process of VAE introduced in section 3.4.1. Here the target variable 𝜽 is
+equivalent to x in Section 3.4.1. We specify the prior of the latent variable z, 𝑝(z), as
+𝑁(z|0, I), and the “likelihood” 𝑝𝝃 (𝜽|z) as a multivariate Gaussian distribution whose pa-
+rameters are computed from z using an MLP. In addition, we assume the variational ap-
+proximation distribution for the intractable posterior 𝑝𝝃 (z|𝜽) is a multivariate Gaussian,
+i.e., 𝑞𝝀 (z|𝜽(𝑡) ) = log 𝑁(z|𝝁(𝑡) , 𝝈2(𝑡) I), where the mean and standard deviations are com-
+puted from the 𝜽(𝑡) with the MLP. The objective function is defined by equation (3-17),
+                                ̃ 𝝀; 𝜽(𝑡) ) is provided in equation (3-18).
+and the corresponding estimator LB(𝝃,
+
+
+                                             30
+                                 CHAPTER 3     METHODOLOGY
+
+      Now we describe how to use the trained VAE model to construct a proposal distribu-
+tion. Recall that VAE generates a new 𝜽 sample by first drawing z from 𝑞𝝀 (z|𝜽), which
+                             𝑇
+is estimated using {𝜽(𝑡) }𝑡=1
+                           0
+                              , and then drawing 𝜽 given z from 𝑝𝝃 (𝜽|z). Each 𝜽 generated
+this way is independent of the previous generated sample since each z(𝑖) is generated inde-
+pendently from 𝑞(z|𝜽). We generate 𝐾 samples of 𝜽, {𝜽(𝑘) }𝐾
+                                                          𝑘=1 and use them to estimate
+a proposal distribution 𝑄(𝜽).
+      Suppose that 𝜽 is a 𝑑-dimensional variable, i.e., 𝜽 = (𝜃1 , 𝜃2 , ..., 𝜃𝑑 )⊤ , and we use the
+following decomposition to construct the 𝑑-dimensional distribution 𝑄(𝜽) by estimating
+𝑑 1-dimensional distributions:
+
+ 𝑄(𝜽) = 𝑄(𝜃1 ) × 𝑄(𝜃2 ∣ 𝜃1 ) × 𝑄(𝜃3 ∣ 𝜃2 , 𝜃1 ) × ⋯ × 𝑄(𝜃𝑑 ∣ 𝜃1 , 𝜃2 , 𝜃3 , … , 𝜃𝑑−1 ). (3-19)
+
+We first use {𝜽(𝑘) }𝐾
+                    𝑘=1 to estimate the marginal distribution of 𝜃1 , 𝑄(𝜃1 ). Specifically, we
+divide the range of 𝜃1 into 𝑏 bins, and use the proportion of samples with 𝜃1 values falls in
+a particular bin as the probability for that bin. Next, we fix the value of 𝜃1 and proceed to
+estimate the conditional distribution 𝑄(𝜃2 ∣ 𝜃1 ) using the same method as for estimating
+𝑄(𝜃1 ). We continue this process until we obtain the last conditional distribution 𝑄(𝜃𝑑 ∣
+𝜃1 , 𝜃2 , 𝜃3 , … , 𝜃𝑑−1 ).
+      This approach was primarily chosen to reduce computational cost and circumvent
+the necessity for constructing high-dimensional histograms. The number of bins, 𝑏, is
+calculated using the Sturges’ Rule, that is,
+
+                                        𝑏 = 1 + log2 𝐾,
+
+which is a simple method for determining the number of bins based on the number of
+available data points.
+      The estimated 𝑄(𝜽) is a new proposal distribution. A new value 𝜽′ is generated by
+randomly selecting one sample from {𝜽(𝑘) }𝐾
+                                          𝑘=1 , which is used to estimate the proposal
+distribution. Note that 𝜽′ generated this way does not depend on the current state of the
+algorithm, 𝜽. Thus the new proposal 𝑄(𝜽) is an independent one. By using 𝑄(𝜽) as the
+proposal distribution, we obtain a new independent MH algorithm.
+      In each iteration of the whole algorithm, we use a certain probability denoted by 𝑝VAE
+to decide if we implement the new independent MH or the original random-walk MH. At
+this stage, we tuning 𝑝VAE manually. Note that we retrain the VAE model every 𝜏 iterations
+using the last 4000 samples accumulated by then together with the initial samples used to
+train the VAE model. Since the distribution of the training samples gets closer and closer
+
+
+                                                31
+                              CHAPTER 3     METHODOLOGY
+
+to the true target distribution, the proposal distribution constructed by the VAE model will
+be a more accurate approximation of the target distribution and generate global proposals
+which can easily jump to any region with high density in the parameter space.
+     The procedure of the complete new VAE-MH algorithm is described in Algorithm 3.5
+below. In our experiments of Section 4.3, when training the VAE model, we use the default
+stochastic gradient ascent method in PyTorch, which is Adam, and choose the learning rate
+to be 0.001. We set the mini-batch size for estimating the ELBO to be 𝑀 = 128, and the
+number of 𝝐 samples to estimate the ELBO to be 𝐿 = 1. For the MCMC algorithm, we
+set the step-size of the Gaussian random-walk MH to be 𝜎MH = 0.5, the VAE-retraining
+time to be 𝜏 = 1000, the total number of iterations to be 𝑁 = 105 , and the number of
+bins for estimating the VAE proposal to be 𝑏 = 20. The probability 𝑝VAE is set to be 0.2
+in the examples for the mixture of 2-dimensional Gaussian and mixture of 2-dimensional
+Student t distributions, and 0.5 in the example for the mixture of 10-dimensional Gaussian.
+
+Algorithm 3.5 A VAE-assisted MCMC sampler
+ 1: For 𝑖 = 1, 2, ..., 𝑁 do,
+ 2:   Generate 𝑢 ∼ 𝑈(0, 1).
+ 3:   If 𝑢 < 𝑝VAE then
+ 4:      MH algorithm with a proposal function from a VAE model,
+ 5:   else
+ 6:      MH algorithm with Gaussian proposal,
+ 7:   end if
+ 8:   If 𝑖 mod 𝜏 = 0 then
+ 9:      Retrain VAE model using the samples obtained from MCMC sampling and some prior
+    training samples.
+10:   end if
+11: end for
+
+
+
+
+3.5 Performance Evaluation Criteria for Algorithms
+Eﬀiciency
+     Given the target distribution 𝑝(𝜃) and the corresponding MCMC algorithm to sam-
+ple from it, in order to estimate the expectation of a 𝑝-integrable function of 𝜃, i.e.,
+∫ 𝑓(𝜃)𝑝(𝜃)𝑑𝜃, we use the mean calculated by the samples 𝜃 (1) , 𝜃 (2) , … , 𝜃 (𝑇) generated
+                                        1 𝑇
+by the MCMC algorithm, i.e. 𝑝(𝑓)
+                             ̂   =       ∑    𝑓(𝜃 (𝑡) ). The eﬀiciency of this estimate is
+                                        𝑇 𝑡=1
+defined by
+                                     𝑣𝑓         1
+                                𝐸=      =        ∞      ,
+                                     𝑣    1 + 2 ∑𝑘=1 𝜌𝑘
+where 𝜌𝑘       =   Cor[𝑓(𝜃 (𝑡) ), 𝑓(𝜃 (𝑡+𝑘) )] is the lag-𝑘 auto-correlation of the chain
+
+                                            32
+                              CHAPTER 3      METHODOLOGY
+
+{𝑓(𝜃 (𝑡) )}∞
+           𝑡=1 , 𝑣𝑓 is the true variance of 𝑓(𝜃), and 𝑣 is the asymptotic variance of
+       [20]
+√𝑇𝑝(𝑓)
+   ̂        . An equivalent quantity to 𝐸 is effective sample size (ESS), which is cal-
+culated as 𝑇𝐸. The ESS is the number of independent samples that are equivalent to
+the correlated samples obtained with the MCMC algorithm. In the numerical studies of
+Chapter 4, we focus on the eﬀiciency for estimating 𝜃, that is, 𝑓(𝜃) = 𝜃.
+
+Lag-1 auto-correlation
+     For an MCMC algorithm, as introduced above, 𝜌1 is the lag-1 auto-correlation of the
+generated Markov chain, and it is also an indicator for the eﬀiciency of the algorithm. A
+value of 𝜌1 close to 0 indicates that the states are nearly independent, while high values
+of 𝜌1 suggest strong correlation between states, implying that the chain may require more
+iterations before reaching equilibrium.
+
+Average acceptance rate
+     For an MH algorithm with the target distribution 𝑝(𝜃), a new state 𝜃 ⋆ is generated
+from the proposal distribution 𝑄(𝜃 ⋆ |𝜃) given the current state 𝜃. The algorithm accepts
+𝜃 ⋆ as the next iteration with probability
+                                              𝑝(𝜃 ⋆ )𝑄(𝜃|𝜃 ⋆ )
+                           𝛼(𝜃 ⋆ |𝜃) = min {1,                 }.
+                                              𝑝(𝜃)𝑄(𝜃 ⋆ |𝜃)
+The average acceptance rate 𝑃jump is defined by
+
+                        𝑃jump = ∫ ∫ 𝑝(𝜃)𝛼(𝜃 ⋆ |𝜃)𝑄(𝜃 ⋆ |𝜃)𝑑𝜃 ⋆ 𝑑𝜃.
+
+The average acceptance rate 𝑃jump is the quantity that we inspect when tuning the step-size
+parameter in an MH algorithm. For Gaussian random-walk MH, Roberts et al. (1997) [41]
+showed that the optimal 𝑃jump is approximately 0.234 for high-dimensional distributions
+and the corresponding optimal step size is 2.38/√𝑑, where 𝑑 is the dimension. In practice,
+the result applied to even low-dimensional cases with 𝑑 ⩾ 5, while for 𝑑 = 1, the optimal
+𝑃jump is around 0.44. Furthermore, if the target distribution is multivariate with covariance
+matrix 𝚺 and we can obtain an estimate of it, i.e., 𝚺,̂ then the optimal random-walk proposal
+                                             ̂
+distribution becomes (𝜽⋆ |𝜽) ∼ 𝑁𝑑 (𝜽, 2.382 𝚺/𝑑) [41]
+                                                      . For the MALA algorithm, Roberts
+et al. (1998) [43] showed that the optimal asymptotic 𝑃jump is approximately 0.574 and the
+optimal step size can be calculated as 1.65/𝑑1/6 . For both random-walk MH and MALA,
+we can use adaptive methods to find the step sizes that achieve the optimal 𝑃jump .
+
+
+
+
+                                             33
+                           CHAPTER 4       NUMERICAL STUDIES
+
+
+
+
+                CHAPTER 4               NUMERICAL STUDIES
+
+4.1 Compare the Speed and Accuracy of Estimating Gaussian
+    Target via MCMC and GVI
+     In this experiment, the target distributions are Gaussian 𝑁(0, I𝑑 ) with dimensions
+𝑑 = 2, 10, 50, 100, 500 respectively, and we use both MCMC and GVI with factor de-
+composed covariance, i.e., FGVI to approximate each of the distributions. The MCMC
+algorithm we employ here is Metropolis-within-Gibbs algorithm. In one iteration of the
+algorithm, each coordinate 𝜃𝑗 is updated using the random-walk MH given the current
+values of the other coordinates, and all the coordinates are updated in turn. The proposal
+distribution for updating 𝜃𝑗 is 𝜃𝑗∗ ∣ 𝜃𝑗 ∼ 𝑁(𝜃𝑗 , 𝑠𝑗2 ), for 𝑗 = 1, 2, … , 𝑑, and we tune the
+𝑠𝑗 here to make the average acceptance rate for each coordinate around 40%. The FGVI
+we use here has 𝑓 = 1 and the setting of tuning parameters for the FGVI algorithm is
+introduced in Section 3.2.2.2.
+     Then we have two estimates of the true mean and covariance matrix of the target
+distribution. The first is the mean and covariance calculated using the MCMC samples
+and the second is the mean and covariance of the FGVI approximation distribution. The
+accuracy of the estimates is measured using the root mean squared error (RMSE) between
+the true values and the estimated values. RMSE is calculated using the formula,
+                                           𝑘
+                                        √ ∑𝑖=1 (𝝀𝑖 − 𝝀̂ 𝑖 )2
+                                 RMSE =                      ,
+                                                 𝑘
+where 𝑘 = 𝑑 + 𝑑 + 𝑑 × (𝑑 − 1)/2 is the total number of free parameters in a Gaussian
+distribution of dimension 𝑑, because there are 𝑑 mean parameters, 𝑑 standard deviation
+parameters and 𝑑 × (𝑑 − 1)/2 free correlation parameters, 𝝀 is a 𝑘-dimensional vector
+containing the true values of all these mean, standard deviation and correlation parameters
+and 𝝀̂ is the vector containing the corresponding estimates. The smaller is the RMSE, the
+higher is the estimation accuracy of the corresponding algorithm.
+     We record the running time of FGVI and run the Metropolis–within–Gibbs algorithm
+for nearly the same amount of time as FGVI. The RMSE and running time of both FGVI
+and Metropolis–within–Gibbs for each Gaussian target distribution are shown in table 4-1.
+     From the results, we find that the moment estimates obtained from the MCMC algo-
+
+                                              34
+                               CHAPTER 4    NUMERICAL STUDIES
+
+rithm are much less accurate than those from FGVI and the problem gets more severe as
+the dimension of the target distribution increases. However, the estimation accuracy of
+FGVI remains stable as the dimension goes up.
+
+Table 4-1 Estimation accuracy of Metropolis-within-Gibbs and FGVI for the moments of stan-
+dard Gaussian distributions with 𝑑 = 2, 10, 50, 100, 500.
+
+                         𝑑     RMSE(FGVI) RMSE(MCMC) Time(s)
+
+                         2        0.0018              0.0222      0.6335
+                         10       0.0010              0.0293      0.9980
+                         50       0.0006              0.0526      4.0623
+                         100      0.0006              0.0602     23.2442
+                         500      0.0001              0.0747   4162.039
+
+
+
+
+4.2 Linear Transformations in HMC via GVI
+4.2.1     Posterior sampling in logistic regression models
+
+4.2.1.1    The model setup
+
+     Here, we first give a brief introduction to the binary logistic regression model. Let
+y = (𝑦1 , … , 𝑦𝑛 )⊤ be a vector of the observed binary responses, and X the corresponding
+design matrix, each row of which is x𝑖 = (1, 𝑥𝑖2 , … , 𝑥𝑖𝑑 )⊤ , for 𝑖 = 1, 2, … , 𝑛. All the
+predictors have been standardized to improve the mixing [49] . We consider the following
+generalized linear model,
+                                            𝑖𝑛𝑑
+                                   (𝑦𝑖 ∣ 𝑝𝑖 ) ∼ Bernoulli(𝑝𝑖 ),
+
+                                           𝑝𝑖 = 𝑔(𝜂𝑖 ),
+
+                                    𝜂𝑖 = 𝛽1 𝑥𝑖1 + ⋯ + 𝛽𝑝 𝑥𝑖𝑑 ,
+                                                                𝑒 𝜂𝑖
+where 𝑔(⋅) is the inverse logit transform, i,e., 𝑔(𝜂𝑖 ) =             .       Then we have a logistic
+                                                               1+𝑒 𝜂𝑖
+regression model as follows,
+                         𝑝 (x𝑖 )
+                   log             = 𝛽1 + 𝛽2 𝑥𝑖2 + ⋯ + 𝛽𝑑 𝑥𝑖𝑑 = 𝜷⊤ x𝑖 .
+                       1 − 𝑝 (x𝑖 )
+Therefore, the likelihood function is
+                                      𝑛
+                                                  𝑦               1−𝑦𝑖
+                             𝐿(𝜷) = ∏ [𝑝 (x𝑖 ) 𝑖 (1 − 𝑝 (x𝑖 ))           ],
+                                     𝑖=1
+
+                                                  35
+                           CHAPTER 4        NUMERICAL STUDIES
+
+and the corresponding log-likelihood function is
+                            𝑛
+
+                𝑙(𝜷) = ∑ [𝑦𝑖 log 𝑝 (x𝑖 ) + (1 − 𝑦𝑖 ) log (1 − 𝑝 (x𝑖 ))]
+                           𝑖=1
+                            𝑛
+                                            𝑝 (x𝑖 )
+                       = ∑ {𝑦𝑖 log                    + log [1 − 𝑝 (x𝑖 )]}
+                                          1 − 𝑝 (x𝑖 )
+                           𝑖=1
+                            𝑛
+                                                            ⊤
+                       = ∑ [𝑦𝑖 𝜷⊤ x𝑖 − log (1 + 𝑒 𝜷 x𝑖 )] .
+                           𝑖=1
+
+The partial derivative of the log-likelihood with respect to each 𝛽𝑗 is
+                                    𝑛
+                       ∂𝑙(𝜷)                1        𝜷⊤ x𝑖
+                             = ∑[𝑦𝑖 𝑥𝑖𝑗 +       ⊤x 𝑒       𝑥𝑖𝑗 ]
+                        ∂𝛽𝑗               1+𝑒 𝜷   𝑖
+                                   𝑖=1
+                                    𝑛
+                                                        1
+                                 = ∑ [(𝑦𝑖 −                 ⊤     )𝑥𝑖𝑗 ] ,
+                                                    1 + 𝑒 −𝜷 x𝑖
+                                   𝑖=1
+
+
+which will be used when implementing the GVI, MALA and HMC algorithms later on.
+     This experiment aims to estimate the parameter vector 𝜷 = (𝛽1 , … , 𝛽𝑑 )⊤ under
+Bayesian framework, and use MCMC methods to sample the posterior distribution. Here
+we specify to 𝜷 a vague prior 𝑝(𝜷), which is centered at 0, namely, 𝜷 ∼ 𝑁𝑑 (0, 100I𝑑 ).
+Then the posterior distribution of 𝜷 is
+
+                                 𝑝(𝜷 ∣ y) ∝ 𝑙(𝜷) × 𝑝(𝜷).
+
+4.2.1.2   The results of numerical studies
+
+     To sample from the posterior distribution of the Bayesian logistical regression model,
+we compare the performance of five algorithms, which are random-walk MH with the
+scale matrix estimated using the burn-in samples (RMH), AM, preconditioned MALA
+with the preconditioning matrix estimated using the burn-in samples, HMC with linear
+transformation matrix estimated using the burn-in samples and HMC with linear transfor-
+mation matrix estimated using GVI. All of RMH, AM, MALA and HMC are introduced
+in Section 3.1, and HMC with linear transformation is described in Section 3.3. For each
+algorithm, we tune the hyper-parameters according to the rules introduced in Section 3.5.
+Two datasets are used in this study. The first is the Pima Indian dataset with 𝑑 = 8 and
+𝑛 = 532 available in the R package MASS, and the second is the German credit dataset
+with 𝑑 = 24 and 𝑛 = 1000 obtained from the UCL machine learning repository. When
+
+                                               36
+                            CHAPTER 4      NUMERICAL STUDIES
+
+analysing each dataset, we use all the five algorithms and for each algorithm, run a chain
+of 106 plus a burn-in of 104 iterations.
+     Since that the dimensions of data is not large, we use the CGVI introduced in sec-
+tion 3.2.2.1 to derive a Gaussian approximation of the target distribution, and use the
+covariance matrix of the approximation distribution for linear transformation in HMC.
+The running times of CGVI are 4.81s and 11.16s for the Pima Indian and German credit
+datasets respectively, and comparable to the running times of the burn-in for HMC, which
+are 4.61s and 11.69s for the two datasets respectively.
+
+ Table 4-2    Comparison of five MCMC algorithms on Pima Indian dataset with 𝑑=8, 𝑛=532.
+
+                         Method      Time(s)        𝐸   𝑃jump   𝜌1
+
+                         RMH         64.9021 0.0382 0.2394 0.9098
+                         AM         113.9103 0.0386 0.2493 0.9211
+                         MALA       146.6414 0.3012 0.5778 0.5467
+                         HMC        359.0816 0.8630 0.9937 0.0623
+                         HMC-GVI 356.7121 0.9200 0.9935 0.0097
+
+
+Table 4-3    Comparison of five MCMC algorithms on German credit dataset with 𝑑=24, 𝑛=1000.
+
+                         Method      Time(s)        𝐸   𝑃jump   𝜌1
+
+                         RMH        137.9467 0.0122 0.2371 0.9590
+                         AM         186.7112 0.0138 0.2277 0.9606
+                         MALA       298.3795 0.1714 0.5383 0.7901
+                         HMC        985.9431 0.8422 0.9888 0.0925
+                         HMC-GVI 992.9441 1.0009 0.9871 0.0119
+
+     The running time, eﬀiciency (𝐸), average acceptance rate (𝑃jump ) and lag-1 autocor-
+relation (𝜌1 ) are shown for each algorithm. Note that hereafter, the eﬀiciency and lag-1
+autocorrelation are all averages over all the parameters in the target distribution. The re-
+sults for the Pima Indian dataset are presented in table 4-2 and those for the German credit
+dataset are in table 4-3. From the results we can see that GVI provides more accuracy when
+estimating the covariance matrix in a similar amount of running time as HMC, and this
+leads to enhanced eﬀiciency of the corresponding algorithm, as verified by 𝐸 = 0.9200
+and 1.0009 for the HMC with linear transformation via GVI, compared to 𝐸 = 0.8630
+and 0.8422 for the HMC with linear transformation using the burn-in samples.
+
+                                               37
+                                            CHAPTER 4           NUMERICAL STUDIES
+
+         In addition, the trace and autocorrelation function (ACF) plots of 𝜷1 in the Pima
+Indian dataset for each of the five algorithms are given in figure 4-1. From the plots,
+we find that MALA, HMC and HMC with linear transformation via GVI perform much
+better than the RMH and AM since their chains mix faster and the autocorrelations drop to
+0 more quickly. HMC with linear transformation via GVI shows even more improvement
+compared to MALA and HMC.
+                                RMH                                                                        AM
+                                     1.0
+
+
+
+
+                                                                                                                1.0
+  −0.8
+
+
+
+
+                                                                           −0.8
+                                     0.8
+
+
+
+
+                                                                                                                0.8
+                                     0.6
+
+
+
+
+                                                                                                                0.6
+  −1.2
+
+
+
+
+                                                                           −1.2
+                                     0.4
+
+
+
+
+                                                                                                                0.4
+                                     0.2
+
+
+
+
+                                                                                                                0.2
+  −1.6
+
+
+
+
+                                                                           −1.6
+                                     0.0
+
+
+
+
+                                                                                                                0.0
+         0   2000     6000   10000          0   10 20 30 40 50 60                  0   2000     6000   10000                          0   10 20 30 40 50 60
+                    Index                              Lag                                    Index                                            Lag
+
+                               MALA                                                                       HMC
+                                     1.0
+
+
+
+
+                                                                                                                0.2 0.4 0.6 0.8 1.0
+  −0.8
+
+
+
+
+                                                                           −0.8
+                                     0.8
+                                     0.6
+  −1.2
+
+
+
+
+                                                                           −1.2
+                                     0.4
+                                     0.2
+  −1.6
+
+
+
+
+                                                                           −1.6
+
+
+
+
+                                                                                                                −0.2
+                                     0.0
+
+
+
+
+         0   2000     6000   10000          0   10 20 30 40 50 60                  0   2000     6000   10000                          0   10 20 30 40 50 60
+                    Index                              Lag                                    Index                                            Lag
+
+                                                                HMC−GVI
+                                                                         1.0
+                                     −0.8
+
+
+
+
+                                                                         0.8
+                                                                         0.6
+                                     −1.2
+
+
+
+
+                                                                         0.4
+                                                                         0.2
+                                     −1.6
+
+
+
+
+                                                                         0.0
+
+
+
+
+                                            0   2000     6000   10000          0       10 20 30 40 50 60
+                                                       Index                                  Lag
+
+Figure 4-1           Trace and ACF plots of 𝜷1 in the Pima Indian dataset for each of the five algorithms.
+
+
+4.2.2           Sampling from a 100-dimensional Gaussian distribution
+
+4.2.2.1             The model setup
+
+         In this experiment, the target distribution is a 100-dimensional multivariate Gaussian
+distribution with mean zero and covariance matrix 𝚺, that is,
+                                                                1
+                                                   𝑝(𝜽) ∝ exp {− 𝜽⊤ 𝚺 −1 𝜽} .
+                                                                2
+
+                                                                    38
+                           CHAPTER 4     NUMERICAL STUDIES
+
+The diagonal elements of 𝚺 are generated from a Gamma distribution with the shape pa-
+rameter equal to 2 and the scale parameter equal to 3, and all the off-diagonal elements
+are fixed at 0.8. Then the log-likelihood function is
+                                             1
+                                    𝑙(𝜽) = − 𝜽⊤ 𝚺 −1 𝜽,
+                                             2
+and its gradient respect to 𝜽 is
+                                   ∂𝑙(𝜽)
+                                         = −𝚺 −1 𝜽,
+                                    ∂𝜽
+which will be used later when implementing the GVI, MALA and HMC algorithms.
+
+4.2.2.2   The simulation results
+
+     In this experiment, we also compare the five MCMC algorithms mentioned in Sec-
+tion 4.2.1 for sampling the 100-dimensional Gaussian target of Section 4.2.2.1. For each
+algorithm, we run a chain of 106 plus a burn-in of 104 iterations. For the HMC algorithm
+with linear transformation via GVI, we employ the FGVI with 𝑓 = 5 to compute the co-
+variance matrix. Hyper-parameters for all the MCMC algorithms are tuned according to
+rules described in Section 3.5. The running time of FGVI is 23.87s, and that of the burn-
+in for HMC is 57.20s. The running time, eﬀiciency (𝐸), average acceptance rate (𝑃jump )
+and lag-1 autocorrelation (𝜌1 ) are shown for each algorithm in table 4-4. Each result is an
+average over 3 replicated runs.
+
+Table 4-4 Comparison of five MCMC algorithms for sampling the 100-dimensional Gaussian
+distribution.
+
+                       Method      Time(s)        𝐸   𝑃jump   𝜌1
+
+                       RMH         1660.89 0.0027 0.9383 0.9984
+                       AM          2075.81 0.0021 0.3100 0.9963
+                       MALA       1031.212 0.0274 0.5657 0.8213
+                       HMC         5657.62 0.9438 0.9744 0.00345
+                       HMC-GVI 5496.92 1.0050 0.9745 -0.0053
+
+     The results in table 4-4 show that for high-dimensional target distributions, the run-
+ning time of FGVI is significantly shorter than that of the burn-in for HMC. However,
+FGVI provides a more accurate estimate of the covariance matrix than the burn-in sam-
+ples of MCMC, and this improved accuracy leads to an MCMC algorithm with higher
+eﬀiciency, as demonstrated by that fact that 𝐸 = 1.0050 for the HMC with linear trans-
+
+
+                                             39
+                              CHAPTER 4           NUMERICAL STUDIES
+
+formation via FGVI while 𝐸 = 0.9438 for the HMC with transformation matrix estimated
+by the burn-in samples.
+
+4.2.3     Posterior sampling in a 509-dimensional GLMM
+
+4.2.3.1    The model setup
+
+     The generalized linear mixed model (GLMM) is an extension to the generalized lin-
+ear model in that the linear predictors of GLMM contains both fixed effects and random
+effects. The set of response variables for the 𝑖th subject is y𝑖 = (𝑦𝑖1 , … , 𝑦𝑖𝑛𝑖 )⊤ , which is
+distributed according to the exponential family with the expectation related to the linear
+predictor via a smooth invertible link function 𝑔(⋅) [14] , i.e.,
+
+                                                𝜇𝑖𝑗 = 𝔼(𝑦𝑖𝑗 ),
+
+                                ⊤       ⊤
+                     𝑔(𝜇𝑖𝑗 ) = 𝑋𝑖𝑗 𝜷 + 𝑍𝑖𝑗 𝑏𝑖 , for 𝑖 = 1, … , 𝑛, 𝑗 = 1, … , 𝑛𝑖 ,
+
+                                                𝑏𝑖 ∼ 𝑁(0, G),
+
+                                            𝜷 ∼ 𝑁(0, 𝜎𝛽2 I).
+
+Here X and 𝜷 are the fixed-effects design matrix and parameter vector respectively; Z
+and 𝑏𝑖 are the random-effects design matrix and the random effect for the 𝑖th subject
+respectively. Here we consider binary responses, where 𝑦𝑖𝑗 ∼ Bernoulli(𝜇𝑖𝑗 ) with the
+                                          𝜇𝑖𝑗
+logit link function 𝑔(𝜇𝑖𝑗 ) = log                . Let G = LL⊤ , where L is the Cholesky factor
+                                         1−𝜇𝑖𝑗
+of G, and let L⋆ denote the matrix for which L⋆𝑖𝑖 = log(L𝑖𝑖 ), L⋆𝑖𝑗 = L𝑖𝑗 if 𝑖 ≠ 𝑗 and
+𝝃 = vech(L⋆ ). Here we assume a normal prior for 𝝃, that is, 𝝃 ∼ 𝑁(0, 𝜎𝝃2 I) [14] . The joint
+posterior distribution can be written as
+                                                      𝑛            𝑛𝑗
+
+           𝑝(y, 𝜽) ∝ ℎ(𝜽) = 𝑝(𝜷)𝑝(𝝃) × ∏ {𝑝(𝑏𝑖 ∣ 𝝃) ∏ 𝑝(𝑦𝑖𝑗 ∣ 𝜷, 𝑏𝑖 )} ,
+                                                     𝑖=1          𝑗=1
+
+and the log-posterior is
+                𝑛    𝑛𝑖                              𝑛
+
+  log ℎ(𝜽) = ∑ ∑ log 𝑝 (𝑦𝑖𝑗 ∣ 𝜷, 𝑏𝑖 ) + ∑ log 𝑝 (𝑏𝑖 ∣ 𝝃) + log 𝑝(𝜷) + log 𝑝(𝝃)
+               𝑖=1 𝑗=1                              𝑖=1
+
+                       ⊤       ⊤              ⊤       ⊤
+            = ∑ {𝑦𝑖𝑗 (𝑋𝑖𝑗 𝜷 + 𝑍𝑖𝑗 𝑏𝑖 ) − ℎ1 (𝑋𝑖𝑗 𝜷 + 𝑍𝑖𝑗 𝑏𝑖 )}                            (4-1)
+               𝑖,𝑗
+                                     𝑛
+                              1                   1        1
+               − 𝑛 log ∣ L ∣ − ∑ 𝑏𝑖⊤ L−⊤ L−1 𝑏𝑖 − 2 𝜷⊤ 𝜷 − 2 𝝃⊤ 𝝃 + 𝐶,
+                              2                  2𝜎𝜷      2𝜎𝝃
+                                    𝐼=1
+
+                                                     40
+                              CHAPTER 4       NUMERICAL STUDIES
+
+where 𝐶 is a constant not depending on 𝜽.                  For the logistic GLMM, we have
+ℎ1 (𝑥)    =     log {1 + exp(𝑥)}.          The gradient of log ℎ(𝜽), to be used later, is
+[∇𝑏1 log ℎ(𝜽), … , ∇𝑏𝑛 log ℎ(𝜽), ∇𝜷 log ℎ(𝜽), ∇𝝃 log ℎ(𝜽)] [14] , where
+                        𝑛𝑖
+                                   ⊤
+     ∇𝑏𝑖 log ℎ(𝜽) = ∑ {𝑦𝑖𝑗 − ℎ1′ (𝑋𝑖𝑗      ⊤
+                                      𝜷 + 𝑍𝑖𝑗 𝑏𝑖 )} 𝑍𝑖𝑗 − L−⊤ L−1 𝑏𝑖 , for 𝑖 = 1, … , 𝑛,
+                       𝑗=1
+
+                                  𝑛   𝑛𝑖
+                                                                                1
+                                               ⊤
+                ∇𝜷 log ℎ(𝜽) = ∑ ∑ {𝑦𝑖𝑗 − ℎ1′ (𝑋𝑖𝑗      ⊤
+                                                  𝜷 + 𝑍𝑖𝑗 𝑏𝑖 )} 𝑋𝑖𝑗 −              𝜷,
+                                                                               𝜎𝜷2
+                                 𝑖=1 𝑗=1
+
+                                                                           1
+                     ∇𝝃 log ℎ(𝜽) = −𝑛1diag(𝐿) + 1𝝃 ⊙ vech(A) −                𝝃,
+                                                                          𝜎𝝃2
+               𝑛
+with A = ∑𝑖=1 L−⊤ L−1 𝑏𝑖 𝑏𝑖⊤ L−⊤ . The 𝑖-th element of the vector 1𝝃 is exp(𝝃𝑖 ) if 𝜉𝑖
+corresponds to a diagonal element of L and 1 otherwise, and the 𝑖th element of the vector
+1diag(L) is 1 if the 𝑖th elements of 𝝃 corresponds to a diagonal element of L and 0 otherwise.
+     The data used in this study is the polypharmacy dataset available in the R package
+aplore3. Following Tan et al. (2018) [14] , we consider the following GLMM,
+
+          logit(𝜇𝑖𝑗 ) = 𝛽0 + 𝛽1 Gender𝑖 + 𝛽2 Race𝑖 + 𝛽3 Age𝑖𝑗 + 𝛽4 MHV1𝑖𝑗 +
+                             𝛽5 MHV2𝑖𝑗 + 𝛽6 MHV3𝑖𝑗 + 𝛽7 INPTMHV𝑖𝑗 + 𝑏𝑖 ,
+
+where 𝑖 = 1, … , 500, 𝑗 = 1, … , 7. The response is whether the subject is using drugs from
+3 or more distinct groups. The predictors include Gender (1 for male and 0 for female),
+race (0 for white and 1 for other races), and age. Binary indicators for the number of
+outpatient or inpatient mental health visits are also included as predictors, with MHV1 =
+1 if the subject had between 1 and 5 outpatient visits, MHV2 = 1 if 6 to 14, MHV3 = 1
+if 15 or more, and INPTMHV = 0 if there were no inpatient mental health visits and 1
+otherwise. Write 𝜷 = (𝛽0 , 𝛽gender , 𝛽race , 𝛽age , 𝛽𝑀1 , 𝛽𝑀2 , 𝛽𝑀3 , 𝛽𝐼𝑀 )⊤ , b = (𝑏1 , … , 𝑏500 )⊤ ,
+and then the parameters are 𝜽 = (𝜷⊤ , b⊤ , 𝝃⊤ )⊤ . Note that for this example, 𝝃 is a scalar,
+so that the dimension of 𝜽 is 509. The prior distributions we assign to the parameters are
+𝑝(𝜷) = 𝑁(0, 100I8 ), 𝑝(𝝃) = 𝑁(0, 100) and 𝑝(𝑏𝑖 ∣ 𝝃) = 𝑁(0, exp (2𝝃)). The posterior
+distribution is as in equation (4-1).
+
+4.2.3.2    The results of numerical studies
+
+     To sample from the posterior distribution of the GLMM model for the polypharmacy
+dataset, we compare the performance of four algorithms, which are preconditioned MALA
+
+                                                 41
+                          CHAPTER 4        NUMERICAL STUDIES
+
+with the preconditioning matrix estimated using the preliminary MALA samples, precon-
+ditioned MALA with the preconditioning matrix estimated using GVI, HMC with linear
+transformation matrix estimated using the preliminary HMC samples and HMC with lin-
+ear transformation matrix estimated using GVI. We do not consider the random-walk MH
+and AM algorithms here because they are both too low in eﬀiciency. For each algorithm,
+we tune the hyper-parameters according to the rules introduced in Section 3.5, and run a
+chain of 106 plus a burn-in of 104 .
+     Due to the complex nature of the target distribution in this experiment, we use the
+GVI with sparse precision matrix proposed by Tan et al. (2018) [14] to estimate the covari-
+ance matrix which is used in both the MALA and HMC algorithms. This GVI method is
+described in Section 3.2.2.3. For the polypharmacy dataset, the running time of GVI with
+sparse precision matrix is approximately 263.45s. Since the model here is more compli-
+cated than the models in Sections 4.2.1 and 4.2.2, for estimating the covariance matrix
+with preliminary samples of the MCMC algorithms, we run the MALA for 85000 itera-
+tions, taking around 252.11s, comparable to the time spent by GVI, and we run HMC for
+105 iterations, taking around 3404.53s.
+     The running time, eﬀiciency (𝐸), average acceptance rate (𝑃jump ) and lag-1 autocor-
+relation (𝜌1 ) are shown for each algorithm in table 4-5. Each result is an average over 3
+replicated runs.
+
+Table 4-5 Comparison of four MCMC algorithms on the polypharmacy dataset under the 509-
+dimensional GLMM model.
+
+                      Method           Time(s)        𝐸   𝑃jump   𝜌1
+
+                      MALA         3157.145 0.0012 0.5767 0.9956
+                      MALA-GVI 3118.427 0.0296 0.5742 0.9793
+                      HMC          14071.61 0.7006 0.9745 0.7002
+                      HMC-GVI      10455.96 0.9584 0.9537 -0.0053
+
+     From the results we can see that for sampling from high-dimensional and complex
+target distributions, deriving the transformation matrix in the MALA and HMC algorithms
+using GVI is beneficial. First, the running time of GVI is significantly shorter than that
+of the preliminary runs of MCMC. Furthermore, GVI yields a more accurate estimate of
+the covariance matrix and this improvement in accuracy leads to the increase in eﬀiciency
+of the corresponding MCMC algorithms. Specifically, the eﬀiciencies are 0.0296 and
+
+
+                                                 42
+                            CHAPTER 4       NUMERICAL STUDIES
+
+0.9584 for the MALA and HMC respectively with transformation matrix estimated with
+GVI, while 0.0012 and 0.7006 respectively for the algorithms with transformation matrix
+estimated using the preliminary MCMC samples.
+
+
+4.3 Eﬀicient Bayesian Sampling Using the VAE-MH Algorithm
+4.3.1     Sampling mixture of Gaussian and mixture of Student t
+
+4.3.1.1    The model setup
+
+     Following the experiments in Habib et al. (2018) [38] , our target distributions are
+a mixture of two-dimensional Gaussian distributions and a mixture of two-dimensional
+Student 𝑡 distributions with distant modes (a distance of 20 between means while the
+standard deviation is 1).
+     We formalize the expression of the mixture Gaussian and mixture Student 𝑡 distri-
+butions as follows. Let 𝑁(𝝁𝟏 , 𝚺𝟏 ) and 𝑁(𝝁𝟐 , 𝚺𝟐 ) denote two Gaussian distributions with
+                                                                                           1 0
+means 𝝁𝟏 = (10, 0)⊤ and 𝝁𝟐 = (−10, 0)⊤ , and covariance matrices 𝚺𝟏 = 𝚺𝟐 = [                  ]
+                                                                                           0 1
+respectively. Then the mixture Gaussian distribution is
+
+             𝑝(x)Mix. of Gauss. = 𝑤 ⋅ 𝑁(x ∣ 𝝁𝟏 , 𝚺𝟏 ) + (1 − 𝑤) ⋅ 𝑁(x ∣ 𝝁𝟐 , 𝚺𝟐 ),
+
+where 0 < 𝑤 < 1 is the mixture weight.
+     Let 𝑇(𝝁𝟏 , 𝚺𝟏 , 𝑣) and 𝑇(𝝁𝟐 , 𝚺𝟐 , 𝑣) denote two Student 𝑡 distributions with means
+                                                                           1 0
+𝝁𝟏 = (10, 0)⊤ and 𝝁𝟐 = (−10, 0)⊤ , and covariance matrices 𝚺𝟏 = 𝚺𝟐 = [         ] re-
+                                                                           0 1
+spectively. The degrees of freedom is 𝑣 = 5 for both distributions. Then the mixture
+Student 𝑡 distribution is
+
+          𝑝(x)Mix. of Student 𝑡 = 𝑤 ⋅ 𝑇(x ∣ 𝝁𝟏 , 𝚺𝟏 , 5) + (1 − 𝑤) ⋅ 𝑇(x ∣ 𝝁𝟐 , 𝚺𝟐 , 5).
+
+     In addition, we also consider the different degrees of freedom for the mixture of
+student 𝑡 distribution, we set the 𝑣1 = 1, 𝑣2 = 4, then the target distribution for the
+mixture of student 𝑡 becomes
+
+          𝑝(x)Mix. of Student 𝑡 = 𝑤 ⋅ 𝑇(x ∣ 𝝁𝟏 , 𝚺𝟏 , 1) + (1 − 𝑤) ⋅ 𝑇(x ∣ 𝝁𝟐 , 𝚺𝟐 , 4).
+
+
+
+
+                                               43
+                                CHAPTER 4     NUMERICAL STUDIES
+
+4.3.1.2   The simulation results
+
+      To sample from each of the mixture Gaussian and mixture Student 𝑡 distributions,
+we compare the performance of the random-walk MH and VAE-MH algorithms, which
+are introduced in Section 3.1.1 and in Section 3.4.2 respectively. When sampling each
+target distribution, we run each algorithm for 105 iterations, and we show the corner plots
+of samples generated by the random-walk MH and VAE-MH samplers in figures 4-2, 4-3
+and 4-4 respectively. The corner plot is an illustrative representation of the distributions of
+the samples for a high-dimensional variable. The corner plot has a lower-triangle shape,
+showing the marginal distribution of each component on the diagonal and the contour for
+each pair of components on the off-diagonal cells. Also, the running time and ESS per
+second for the two algorithms sampling the mixture Gaussian and mixture Student 𝑡 are
+shown in tables 4-6, 4-7 and 4-8 respectively. Here we use ESS rather than 𝐸 to facilitate
+the comparison with the results in Habib et al. (2018). Recall that ESS is the product of
+𝐸 and the total number of MCMC iterations, and thus the two quantities are equivalent.
+
+
+
+
+                                                   𝜽𝜽𝟐𝟐
+   𝜽𝜽𝟐𝟐                                     𝜽𝜽𝟐𝟐
+
+
+
+                                                                      𝜽𝜽𝟏𝟏            𝜽𝜽𝟐𝟐
+            𝜽𝜽𝟏𝟏        𝜽𝜽𝟐𝟐                                   𝜽𝜽𝟏𝟏            𝜽𝜽𝟐𝟐
+
+
+
+
+Figure 4-2 Corner plot of random-walk MH and VAE-MH algorithms for sampling the mixture
+Gaussian distribution.
+
+
+
+
+   𝜽𝜽𝟐𝟐                                     𝜽𝜽𝟐𝟐
+
+
+
+
+             𝜽𝜽𝟏𝟏              𝜽𝜽𝟐𝟐                            𝜽𝜽𝟏𝟏          𝜽𝜽𝟐𝟐
+
+
+
+Figure 4-3 Corner plot of random-walk MH and VAE-MH algorithms for sampling the mixture
+Student 𝑡 distributions with degrees of freedom 𝑣1 = 𝑣2 = 5.
+
+                                                          44
+                              CHAPTER 4     NUMERICAL STUDIES
+
+
+
+
+   𝜽𝜽𝟐𝟐                                   𝜽𝜽𝟐𝟐
+
+
+
+
+            𝜽𝜽𝟏𝟏       𝜽𝜽𝟐𝟐                           𝜽𝜽𝟏𝟏         𝜽𝜽𝟐𝟐
+
+
+
+Figure 4-4 Corner plot of random-walk MH and VAE-MH algorithms for sampling the mixture
+Student 𝑡 distributions with degrees of freedom 𝑣1 = 1, 𝑣2 = 4.
+
+      As illustrated in both figures 4-2 and 4-3, the random-walk MH algorithm gets stuck
+in one mode, while the VAE-MH sampler successfully explore the whole parameter space
+and find both modes which are in fact far away apart. In addition, in the mixture of
+student 𝑡 distribution with different degrees of freedom 𝑣1 = 1, 𝑣2 = 4, the samples
+of RWM algorithm mainly concentrate in specific areas, indicating localized exploration
+with limited coverage of the distribution’s potential multi-modality, while the VAE-MH
+algorithm demonstrates better exploration of the distribution’s multi-modal nature, as ev-
+idenced by the clear multi-modal patterns in the joint distribution plots. Furthermore,
+figure 4-3 shows that the VAE-MH algorithm also captures the heavy-tailed feature of
+the Student 𝑡 distribution better than random-walk MH. Since the random-walk MH gets
+stuck in one local mode and fails to traverse the whole parameter space, it can hardly
+converge. Therefore here we omit the ESS for the random-walk MH in the mixture of
+Gaussian experiment and mixture of student 𝑡 with degrees of freedom 𝑣1 = 𝑣2 = 5,
+because estimating eﬀiciency using a chain that does not converge is not sensible.
+
+Table 4-6 Performance comparison of the random-walk MH and VAE-MH algorithms for sam-
+pling the mixture Gaussian distribution.
+
+                              Algorithm           Time(s) ESS/s
+
+                              random-walk MH          145     NA
+                              VAE-MH                  288    12.9683
+
+
+
+
+                                                 45
+                             CHAPTER 4        NUMERICAL STUDIES
+
+
+Table 4-7 Performance comparison of the random-walk MH and VAE-MH algorithms for sam-
+pling the mixture Student 𝑡 distribution with degrees of freedom 𝑣1 = 𝑣2 = 5.
+
+                               Algorithm             Time(s) ESS/s
+
+                               random-walk MH         122     NA
+                               VAE-MH                 266   3.7852
+
+
+Table 4-8 Performance comparison of the random-walk MH and VAE-MH algorithms for sam-
+pling the mixture Student 𝑡 distribution with degrees of freedom 𝑣1 = 1, 𝑣2 = 4.
+
+                             Algorithm            Time(s)    ESS/s
+
+                             random-walk MH 119.0788 5.720162
+                             VAE-MH                309.0    17.2557
+
+
+Table 4-9 ESS per second for each algorithm sampling the mixture Gaussian and mixture Student
+𝑡 distributions, taking into account the total time, including both the training time and generating
+time for 20000 samples
+
+                   Target               AVS    HMC RWM ANICE L2HMC
+
+                   Mix. of Gauss.     7.64e-2 NA        NA 2.50e-4 2.88e-5
+                   Mix. of Student 𝑡 1.45e-2 NA         NA 2.17e-4 3.7852
+
+
+     Furthermore, Habib et al. (2018) [38] shows that it is not just diﬀicult for basic MCMC
+samplers such as the random-walk MH to sample complex distributions eﬀiciently, it is
+also diﬀicult for more advanced MCMC algorithms such as HMC. L2HMC [50] and A-
+NICE-MCMC [51] are both methods combining MCMC with neural networks. Habib et
+al. (2018) [38] compared them with the method proposed by themselves, i.e., auxiliary
+variational MCMC (AVS), and two standard MCMC algorithms, which are random-walk
+MH and HMC. Habib et al. (2018) used the same mixture Gaussian and mixture Student
+𝑡 target distributions as in this section to do the comparison, and we copy their results in
+table 4-9. Here we can find that HMC also has trouble finding both modes for each of the
+mixture distributions. Furthermore, Habib et al. (2018) indicated that HMC also failed to
+capture the heavy-tailed shape of the Student 𝑡 distribution.
+
+
+
+
+                                                46
+                          CHAPTER 4        NUMERICAL STUDIES
+
+4.3.2     Sampling from 10-dimensional mixture Gaussian distribution
+
+4.3.2.1    The model setup
+
+     The third distribution that we aim to sample from is a mixture of two 10-dimensional
+Gaussian distributions. In fact, we use the same target distribution as deployed in the
+experiment of Hunt-Smith et al. (2024) [40] , and thus the density of the mixture Gaussian
+distribution is
+                                      1        2            1        2
+                                          ‖𝜽−𝜽 ‖                ‖𝜽−𝜽 ‖
+                                 𝑒− 2   𝐴
+                                                         𝑒− 2   𝐵
+                       𝑓(𝜽) = 𝑤𝐴                    + 𝑤𝐵          ,
+                                  (2𝜋)𝑑/2                 (2𝜋)𝑑/2
+                             2        1
+where the weights are 𝑤𝐴 = , 𝑤𝐵 =       and the means are non-zero only for the first two
+                             3        3
+dimensions, i.e., 𝜽𝐴 = (8, 3, 0⊤  ⊤                ⊤ ⊤
+                               8 ) , 𝜽𝐵 = (−2, 3, 08 ) . This setup implies two distant
+modes in a 10-dimensional parameter space.
+
+4.3.2.2    The simulation results
+
+     To sample from the 10-dimension mixture Gaussian distribution, we also compare
+the performance of random-walk MH and VAE-MH. For each algorithm, we run a chain
+of 105 iterations and generate the corresponding corner plot in figures 4-6 and 4-5 respec-
+tively. The total running time and ESS per second are shown in table 4-10.
+     From table 4-10, we can find that the running times of the VAE-MH and random-walk
+MH algorithms are comparable. However, the VAE-MH algorithm successfully identifies
+all the modes in the target distributions as shown in figure 4-6, while the random-walk MH
+gets trapped in one local mode as shown in figure 4-5 and fails to converge. Therefore, we
+do not display the ESS for the random-walk MH algorithm. For this more complicated
+10-dimensional example, VAE-MH also shows its superiority in capacity of identifying
+multiple modes and eﬀiciency of traversing the whole parameter space.
+
+Table 4-10 Performance comparison of the random-walk MH and VAE-MH algorithms for sam-
+pling the 10-dimensional mixture Gaussian distribution.
+
+                            Algorithm              Time(s) ESS/s
+
+                            random-walk MH          551    NA
+                            VAE-MH                  665   3.5536
+
+
+
+
+                                              47
+                              CHAPTER 4        NUMERICAL STUDIES
+
+
+
+
+             𝜽𝜽𝟏𝟏𝟏𝟏
+
+              𝜽𝜽𝟗𝟗
+              𝜽𝜽𝟖𝟖
+
+              𝜽𝜽𝟕𝟕
+
+              𝜽𝜽𝟔𝟔
+
+              𝜽𝜽𝟓𝟓
+
+              𝜽𝜽𝟒𝟒
+
+              𝜽𝜽𝟑𝟑
+
+              𝜽𝜽𝟐𝟐
+
+                       𝜽𝜽𝟏𝟏   𝜽𝜽𝟐𝟐   𝜽𝜽𝟑𝟑   𝜽𝜽𝟒𝟒   𝜽𝜽𝟓𝟓   𝜽𝜽𝟔𝟔   𝜽𝜽𝟕𝟕   𝜽𝜽𝟖𝟖   𝜽𝜽𝟗𝟗   𝜽𝜽𝟏𝟏𝟏𝟏
+Figure 4-5 Corner plot of the random-walk MH algorithm for sampling the 10-dimensional mix-
+ture Gaussian distribution.
+
+
+
+
+              𝜽𝜽𝟏𝟏𝟏𝟏
+
+              𝜽𝜽𝟗𝟗
+              𝜽𝜽𝟖𝟖
+
+              𝜽𝜽𝟕𝟕
+              𝜽𝜽𝟔𝟔
+              𝜽𝜽𝟓𝟓
+              𝜽𝜽𝟒𝟒
+              𝜽𝜽𝟑𝟑
+              𝜽𝜽𝟐𝟐
+
+                       𝜽𝜽𝟏𝟏 𝜽𝜽𝟐𝟐 𝜽𝜽𝟑𝟑       𝜽𝜽𝟒𝟒 𝜽𝜽𝟓𝟓 𝜽𝜽𝟔𝟔 𝜽𝜽𝟕𝟕 𝜽𝜽𝟖𝟖 𝜽𝜽𝟗𝟗 𝜽𝜽𝟏𝟏𝟏𝟏
+Figure 4-6 Corner plot of the VAE-MH algorithm for sampling the 10-dimensional mixture
+Gaussian distribution.
+
+
+
+                                                   48
+                            CHAPTER 4       NUMERICAL STUDIES
+
+4.3.3     Sampling from 2-dimensional Gaussian mixture of 20 compo-
+          nents
+
+4.3.3.1    The model setup
+
+     The forth distribution that we aim to sample from is a mixture of 2-dimensional
+Gaussian mixtures with 20 components. In fact, we use the same target distribution as
+deployed in the experiment of Faming Liang et al. (2001) [52] , and thus the density of the
+mixture Gaussian distribution is
+                                    20
+                              1                      1
+                  𝑓(𝜽) =           ∑ 𝑤𝑖 exp {−           (𝜽 − 𝜇𝑖 )⊤ (𝜽 − 𝜇𝑖 )} ,
+                            √2𝜋𝜎 𝑖=1                2𝜎 2
+
+where 𝜎 = 0.1 and 𝑤1 = ⋯ = 𝑤20 = 0.05 and the mean vectors 𝜇1 , 𝜇1 , ⋯ , 𝜇20 are
+uniformly drawn from the rectangle [0, 10] × [0, 10], these are listed in following table 4-
+11. And the variance of these modes are small enough to keep the spikes well separated,
+as might be inspected in figure 4-7. This setup implies 20 modes in a 2-dimensional
+parameter space.
+
+
+
+
+Figure 4-7 In a toy example involving twenty Gaussian peaks, it is evident that certain peaks
+cluster more densely, yet they are distinctly isolated by expansive areas where the probability is
+nearly zero.
+
+
+
+
+                                               49
+                             CHAPTER 4     NUMERICAL STUDIES
+
+
+  Table 4-11     The Mean vectors of the 20 Components of the Mixture Gaussian Distribution.
+
+                     𝑖 𝜇𝑖1 𝜇𝑖2    𝑖   𝜇𝑖1 𝜇𝑖2    𝑖   𝜇𝑖1 𝜇𝑖2   𝑖   𝜇𝑖1 𝜇𝑖2
+
+                     1 2.18 5.76 6 3.25 3.47 11 5.41 2.65 16 4.93 1.50
+                     2 8.67 9.59 7 1.70 0.5 12 2.70 7.88 17 1.83 0.09
+                     3 4.24 8.48 8 4.59 5.60 13 4.98 3.70 18 2.26 0.31
+                     4 8.41 1.68 9 6.91 5.81 14 1.14 2.39 19 5.54 6.86
+                     5 3.93 8.82 10 6.87 5.40 15 8.33 9.50 20 1.69 8.11
+
+
+4.3.3.2      The simulation results
+
+     To evaluate whether the VAE-MH algorithm can effectively sample from distribu-
+tions with increased modality, we tested it on a two-dimensional mixture Gaussian distri-
+bution with 20 components. We conducted a simulation run comprising 106 iterations,
+including a burn-in period of 105 iterations. The simulation results are as follows.
+
+
+
+
+       Figure 4-8    The plot of whole random-walk MH samples and VAE-MH samples.
+
+
+
+
+Figure 4-9     Trajectory plot of the first 10000 samples of random-walk MH and VAE-MH algo-
+rithm.
+
+     The figure 4-8 shows the plot of whole samples obtained via both the random-walk
+MH and VAE-MH algorithms. Furthermore, the figure 4-9 displays the sampling paths
+
+                                                50
+                           CHAPTER 4     NUMERICAL STUDIES
+
+for the first 10,000 iterations from both algorithms. This trace plot demonstrates that
+the VAE-MH algorithm successfully sampled all components within the initial 10,000
+iterations, although the population was initialized at one corner. In contrast, in the first
+10,000 iterations for the random-walk MH, the random-walk MH algorithm only detects
+the target distribution within the range [0,3] and [-0.5,1] and gets trapped in local modes.
+The plot of the whole random-walk MH samples shows that the random-walk MH sampler
+only detects the three modes of the target distribution.
+
+
+
+
+                                            51
+                                      CONCLUSION
+
+
+
+
+                                  CONCLUSION
+
+     1. Main Results
+     The goal of this study is to combine the MCMC algorithms with VI methods to
+produce a novel class of algorithms that incorporate the strengths of both. We propose
+two methods to combine MCMC and VI. The first is to use GVI to estimate the covariance
+matrix deployed by the HMC for linear transformation, and the second is to produce a new
+MH algorithm of which the proposal is produced by the VI-based generative model, VAE.
+By using the numerical studies to illustrate the effects of these two methods, we get the
+following three main conclusions.
+     （1） We find that moment estimates obtained from the burn-in stage of an MCMC
+algorithm which runs approximately the same amount of time as GVI are much less accu-
+rate. This is because the Markov chain is far from convergence at the end of burn-in, the
+distribution of the these samples is biased and the problem becomes more severe as the
+dimension increases. GVI is much more computationally eﬀicient in calculating the mo-
+ment estimates of a distribution compared to MCMC and its estimation accuracy remains
+stable with the dimension of the target distribution increasing.
+     （2） Based on the experiment results of sampling from the logistic regression pos-
+terior distribution for the 8-dimensional Pima Indian dataset, the 24-dimensional German
+credit dataset, the 100-dimensional Gaussian target and 509-dimensional GLMM poste-
+rior distribution, distinct trends are observed in the comparison between GVI and MCMC
+in terms of the computational eﬀiciency and the accuracy of estimating the covariance ma-
+trix. In low-dimension cases, the GVI and MCMC burn-in of 104 iterations take around
+the same amount of time. But GVI provides a more accurate covariance matrix estimate
+than MCMC burn-in, resulting in enhanced eﬀiciency (𝐸) of the MCMC algorithms for
+the transformed variables. In high-dimensional settings, GVI takes significantly shorter
+time than MCMC burn-in, while still provides a more accurate covariance matrix esti-
+mate. Thus estimating the covariance matrix with GVI leads to higher eﬀiciency (𝐸) of
+the HMC algorithm with linear transformation and shorter total sampling time. In all,
+GVI emerges as a promising alternative for the MCMC burn-in when estimating the co-
+variance matrix, since it provides superior eﬀiciency and accuracy, and its effects are
+robust for high-dimensional and complex target distributions.
+
+                                            52
+                                        CONCLUSION
+
+     （3） The new VAE-MH sampler that we proposed leverages the VAE model to
+capture the low-dimensional latent structures of the parameter space and generates a pro-
+posal distribution with global nature. Our experiments demonstrate that the new “VAE-
+MH” sampler performs better much than state-of-the-art MCMC algorithms for sampling
+multi-modal target distributions in terms of both eﬀiciency and computational time.
+     2. Innovations
+     There are two main innovative points in this study.
+     （1） We innovatively propose to utilize GVI to derive a covariance matrix for the
+linear transformation in HMC. What is more, we use GVI with various covariance struc-
+tures. Specifically, we consider GVI with Cholesky decomposed covariance [12] , GVI
+with factor decomposed covariance [13] and GVI with sparse precision matrices [14] . These
+methods address the challenge of estimating covariance matrices for complex and high-
+dimensional distributions.
+     （2） We propose to combine a VI-based generative model, VAE, with the random-
+walk MH sampler, by using the samples generated with the random-walk MH to train
+VAE and then constructing a new independent MH algorithm with the proposal produced
+by VAE. This innovative “VAE-MH” sampler is straightforward to implement and more
+eﬀicient in traversing the whole parameter space than state-of-the-art MCMC algorithms.
+     3. Prospects
+     There are two directions that we can work on in the future.
+     （1） We have used some examples in our study to demonstrate the superiority of
+GVI over MCMC methods in estimating the covariance matrix and the eﬀiciency of VAE-
+MH in sampling complex distributions compared to state-of-the-art MCMC algorithms.
+However, further investigation is necessary to fully explore their capabilities. In the future,
+we aim to assess their effectiveness of statistical inference in real application areas, such
+as finance, biology, etc.
+     （2） The VAE-MH sampler is a combination of one type of the generative models
+and one basic MCMC algorithm. In the future, we will investigate the possibility and
+effects of combining all sorts of generative models with more advanced MCMC algo-
+rithms, including the reversible jump MCMC [53] , which is a generalization of MH and
+allows jumping among parameter spaces with varying dimensions.
+
+
+
+
+                                              53
+                                           REFERENCES
+
+
+
+
+                                      REFERENCES
+
+[1]    METROPOLIS N, ROSENBLUTH A W, ROSENBLUTH M N, et al. Equation of state calcula-
+       tions by fast computing machines[J]. The Journal of Chemical Physics, 1953, 21(6): 1087-1092.
+[2]    HASTINGS W K. Monte Carlo sampling methods using Markov chains and their applications
+       [M]. Oxford University Press, 1970.
+[3]    GIROLAMI M, CALDERHEAD B. Riemann manifold langevin and hamiltonian monte carlo
+       methods[J]. Journal of the Royal Statistical Society Series B: Statistical Methodology, 2011, 73
+       (2): 123-214.
+[4]    JORDAN M I, GHAHRAMANI Z, JAAKKOLA T S, et al. An introduction to variational
+       methods for graphical models[J]. Machine Learning, 1999, 37: 183-233.
+[5]    WAINWRIGHT M J, JORDAN M I, et al. Graphical models, exponential families, and varia-
+       tional inference[J]. Foundations and Trends® in Machine Learning, 2008, 1(1–2): 1-305.
+[6]    BLEI D M, KUCUKELBIR A, MCAULIFFE J D. Variational inference: A review for statisti-
+       cians[J]. Journal of the American Statistical Association, 2017, 112(518): 859-877.
+[7]    ROBERT C P, CASELLA G. Monte Carlo statistical methods: Vol. 2[M]. Springer, 1999.
+[8]    ZHANG C, MATSEN IV F A. Variational Bayesian phylogenetic inference[C]//International
+       Conference on Learning Representations. 2018.
+[9]    GAMERMAN D, LOPES H F. Markov chain Monte Carlo: stochastic simulation for Bayesian
+       inference[M]. CRC press, 2006.
+[10]   HABIB R, BARBER D. Auxiliary variational MCMC[C]//7th International Conference on
+       Learning Representations, ICLR 2019. International Conference on Learning Representations,
+       2019: 1-13.
+[11]   DE FREITAS N, HOJEN-SORENSEN P, JORDAN M I, et al. Variational mcmc[A]. 2013.
+[12]   TRAN M N, NGUYEN T N, DAO V H. A practical tutorial on variational Bayes[A]. 2021.
+[13]   ONG V M H, NOTT D J, SMITH M S. Gaussian variational approximation with a factor
+       covariance structure[J]. Journal of Computational and Graphical Statistics, 2018, 27(3): 465-
+       478.
+[14]   TAN L S, NOTT D J. Gaussian variational approximation with sparse precision matrices[J].
+       Statistics and Computing, 2018, 28: 259-275.
+[15]   KINGMA D P, WELLING M. Auto-encoding variational bayes[A]. 2013.
+[16]   ROBERTS G O, ROSENTHAL J S. General state space Markov chains and MCMC algorithms
+       [Z]. 2004.
+[17]   METROPOLIS N, ULAM S. The monte carlo method[J]. Journal of the American Statistical
+       Association, 1949, 44(247): 335-341.
+
+
+
+                                                  54
+                                          REFERENCES
+
+[18]   GEMAN S, GEMAN D. Stochastic relaxation, Gibbs distributions, and the Bayesian restoration
+       of images[J]. IEEE Transactions on Pattern Analysis and Machine Intelligence, 1984(6): 721-
+       741.
+[19]   YANG Z, RODRÍGUEZ C E. Searching for eﬀicient Markov chain Monte Carlo proposal ker-
+       nels[J]. Proceedings of the National Academy of Sciences, 2013, 110(48): 19307-19312.
+[20]   THAWORNWATTANA Y, DALQUEN D, YANG Z. Designing simple and eﬀicient Markov
+       chain Monte Carlo proposal kernels[Z]. 2018.
+[21]   ROBERTS G O, STRAMER O. Langevin diffusions and Metropolis-Hastings algorithms[J].
+       Methodology and Computing in Applied Probability, 2002, 4: 337-357.
+[22]   NEAL R M, et al. MCMC using Hamiltonian dynamics[J]. Handbook of Markov Chain Monte
+       Carlo, 2011, 2(11): 2.
+[23]   HOFFMAN M D, GELMAN A, et al. The No-U-Turn sampler: adaptively setting path lengths
+       in Hamiltonian Monte Carlo.[J]. J. Mach. Learn. Res., 2014, 15(1): 1593-1623.
+[24]   HAARIO H, SAKSMAN E, TAMMINEN J. An adaptive Metropolis algorithm[J]. Bernoulli,
+       2001: 223-242.
+[25]   GEYER C J. Markov chain Monte Carlo maximum likelihood[M]. Interface Foundation of
+       North America, 1991.
+[26]   MARINARI E, PARISI G. Simulated tempering: a new monte carlo scheme[J]. Europhysics
+       letters, 1992, 19(6): 451.
+[27]   TAK H, MENG X L, VAN DYK D A. A repelling–attracting Metropolis algorithm for multi-
+       modality[J]. Journal of Computational and Graphical Statistics, 2018, 27(3): 479-490.
+[28]   BISHOP C. Pattern recognition and machine learning[J]. Springer Google Schola, 2006, 2:
+       5-43.
+[29]   MNIH A, GREGOR K. Neural variational inference and learning in belief networks[C]//
+       International Conference on Machine Learning. PMLR, 2014: 1791-1799.
+[30]   MNIH A, REZENDE D. Variational inference for monte carlo objectives[C]//International Con-
+       ference on Machine Learning. PMLR, 2016: 2188-2196.
+[31]   PAISLEY J, BLEI D, JORDAN M. Variational Bayesian inference with stochastic search[A].
+       2012.
+[32]   ZEILER M D. Adadelta: an adaptive learning rate method[A]. 2012.
+[33]   CRESWELL A, WHITE T, DUMOULIN V, et al.                Generative adversarial networks: An
+       overview[J]. IEEE Signal Processing Magazine, 2018, 35(1): 53-65.
+[34]   KOBYZEV I, PRINCE S J, BRUBAKER M A. Normalizing flows: An introduction and review
+       of current methods[J]. IEEE Transactions on Pattern Analysis and Machine Intelligence, 2020,
+       43(11): 3964-3979.
+[35]   SOHL-DICKSTEIN J, WEISS E, MAHESWARANATHAN N, et al. Deep unsupervised learn-
+       ing using nonequilibrium thermodynamics[C]//International Conference on Machine Learning.
+       PMLR, 2015: 2256-2265.
+[36]   HO J, JAIN A, ABBEEL P. Denoising diffusion probabilistic models[J]. Advances in Neural
+       Information Processing Systems, 2020, 33: 6840-6851.
+
+                                                55
+                                            REFERENCES
+
+[37]   SALIMANS T, KINGMA D, WELLING M. Markov chain monte carlo and variational in-
+       ference: Bridging the gap[C]//International Conference on Machine Learning. PMLR, 2015:
+       1218-1226.
+[38]   HABIB R, BARBER D. Auxiliary variational MCMC[C]//International Conference on Learn-
+       ing Representations. 2018.
+[39]   GABRIÉ M, ROTSKOFF G M, VANDEN-EIJNDEN E. Eﬀicient bayesian sampling using
+       normalizing flows to assist markov chain monte carlo methods[A]. 2021.
+[40]   HUNT-SMITH N, MELNITCHOUK W, RINGER F, et al. Accelerating Markov Chain Monte
+       Carlo sampling with diffusion models[J]. Computer Physics Communications, 2024, 296:
+       109059.
+[41]   GELMAN A, GILKS W R, ROBERTS G O. Weak convergence and optimal scaling of random
+       walk metropolis algorithms[J]. The annals of applied probability, 1997, 7(1): 110-120.
+[42]   ROBERTS G O, ROSENTHAL J S. Examples of adaptive MCMC[J]. Journal of Computational
+       and Graphical Statistics, 2009, 18(2): 349-367.
+[43]   ROBERTS G O, ROSENTHAL J S. Optimal scaling of discrete approximations to Langevin
+       diffusions[J]. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 1998,
+       60(1): 255-268.
+[44]   PARK J. Sampling from multimodal distributions using tempered Hamiltonian transitions[A].
+       2021.
+[45]   BETANCOURT M. A conceptual introduction to Hamiltonian Monte Carlo[A]. 2017.
+[46]   THOMAS S, TU W. Learning hamiltonian monte carlo in r[J]. The American Statistician, 2021,
+       75(4): 403-413.
+[47]   TRAN M N, NGUYEN N, NOTT D, et al. Bayesian deep net GLM and GLMM[J]. Journal of
+       Computational and Graphical Statistics, 2020, 29(1): 97-113.
+[48]   BARBU A, ZHU S C, et al. Monte Carlo Methods: Vol. 35[M]. Springer, 2020.
+[49]   GELMAN A, JAKULIN A, PITTAU M G, et al. A weakly informative default prior distribution
+       for logistic and other regression models[Z]. 2008.
+[50]   LEVY D, HOFFMAN M D, SOHL-DICKSTEIN J. Generalizing hamiltonian monte carlo with
+       neural networks[A]. 2017.
+[51]   SONG J, ZHAO S, ERMON S. A-nice-mc: Adversarial training for mcmc[J]. Advances in
+       Neural Information Processing Systems, 2017, 30.
+[52]   LIANG F, WONG W H. Real-parameter evolutionary monte carlo with applications to bayesian
+       mixture models[J]. Journal of the American Statistical Association, 2001, 96(454): 653-666.
+[53]   GREEN P J. Reversible jump Markov chain Monte Carlo computation and Bayesian model
+       determination[J]. Biometrika, 1995, 82(4): 711-732.
+
+
+
+
+                                                   56
+                                    ACKNOWLEDGEMENTS
+
+
+
+
+                          ACKNOWLEDGEMENTS
+
+     First of all, I want to thank my supervisor, Assistant Professor Xiyun JIAO, for her
+patient guidance in my study and research. She was involved in every step of my thesis,
+from selecting the topic to conducting the experiments and revising the paper. She helped
+me modify my code, explained the algorithms to me in her spare time, and cared for me
+in my daily life. She was rigorous and diligent in her academic work, and sincere and
+humble in her personality. She is my role model for my future learning. I wish her all the
+best in her future work and life.
+     Next, I want to express my gratitude to my grandparents for their encouragement and
+support throughout my journey of growth. Every conversation with them brings warmth
+and touches my heart, especially being far away from home. Furthermore, I want to ex-
+press my gratitude to my parents who support and encourage me to bravely pursue what I
+love, allowing me to stand on their shoulders and see a bigger world.
+     I want to show my appreciate for our research group. Thanks to my senior fellow
+students of our research group, especially my senior student Guan Nuo and Fang Jialu.
+My academic discussion with them has made my research progress smoothly.
+     At last, I would also like to thank the teachers and students of the Department of
+Statistics and Data Science for their warm help, and I hope I can do my best to help them
+in the future. I would like to express my sincere gratitude to Professor Guoliang Tian
+for patiently reviewing my thesis. His detailed explanations have greatly benefited me.
+Special thanks to my senior Wang Qianqian, classmate Wu Xiaotong and friend Wang
+Yongwei. Time has witnessed our days of hard study together and our friendship. May
+we help each other in our future. Thank all my friends who have helped me.
+     “Artists call the moment between the sun starting to set and the darkness covering
+the earth, the ‘golden hour’. This moment is incomparably short, yet incomparably long.
+Everything is immersed in the golden glow of the sunset, radiating a tenderness that no
+other moment can present. This moment makes people indulge involuntarily.”
+     I want to say: Thank you to everyone who has treated me with kindness and gentle-
+ness. Thank you to everyone who has accompanied me. Thank you for giving me, ‘the
+golden hour’.
+
+
+                                           57
+                      RESUME AND ACADEMIC ACHIEVEMENTS
+
+
+
+
+         RESUME AND ACADEMIC ACHIEVEMENTS
+
+                                       Resume
+    Yin pingping was born in Anqing, Anhui Province on October 12, 1999.
+    Yin pingping was admitted to South China Agricultural University in Department of
+Mathematics and Information Science, majoring in statistics, and graduated with a Bach-
+elor of Science degree in June 2022.
+    Since September 2022, she has studied in the Department of statistics and data sci-
+ence of Southern University of Science and Technology.
+
+
+
+
+                                          58
+
