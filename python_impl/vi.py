@@ -34,6 +34,16 @@ def _unpack_cholesky_lambda(lam: np.ndarray, dim: int) -> tuple[np.ndarray, np.n
     return mu, l
 
 
+def _regularize_triangular_factor(l: np.ndarray, min_abs_diagonal: float = 1e-8) -> np.ndarray:
+    l = np.array(l, dtype=float, copy=True)
+    diag = np.diag(l).copy()
+    small = np.abs(diag) < min_abs_diagonal
+    if np.any(small):
+        diag[small] = np.where(diag[small] < 0.0, -min_abs_diagonal, min_abs_diagonal)
+        np.fill_diagonal(l, diag)
+    return l
+
+
 def cgvi(
     log_density: Callable[[np.ndarray], float],
     grad_log_density: Callable[[np.ndarray], np.ndarray],
@@ -68,12 +78,11 @@ def cgvi(
 
     for t in range(max_iter):
         mu, l = _unpack_cholesky_lambda(lam[t], dim)
-        l = ensure_spd(l @ l.T)
-        chol = np.linalg.cholesky(l)
-        inv_chol = np.linalg.solve(chol, np.eye(dim))
+        l = _regularize_triangular_factor(l)
+        inv_l = np.linalg.solve(l, np.eye(dim))
 
         eps = rng.normal(size=(n_samples, dim))
-        theta = mu + eps @ chol.T
+        theta = mu + eps @ l.T
 
         grad = np.zeros(glen, dtype=float)
         lb = 0.0
@@ -81,11 +90,11 @@ def cgvi(
             th = theta[i]
             value = (
                 log_density(th)
-                + np.log(np.abs(np.linalg.det(chol)))
-                + 0.5 * (th - mu) @ inv_chol.T @ inv_chol @ (th - mu)
+                + np.log(np.abs(np.linalg.det(l)))
+                + 0.5 * (th - mu) @ inv_l.T @ inv_l @ (th - mu)
             )
             lb += value / n_samples
-            gs = grad_log_density(th) + inv_chol.T @ inv_chol @ (th - mu)
+            gs = grad_log_density(th) + inv_l.T @ inv_l @ (th - mu)
             grad[:dim] += gs / n_samples
             grad[dim:] += _vech_outer(gs, eps[i]) / n_samples
 
@@ -114,6 +123,7 @@ def cgvi(
         last_iter = t
 
     mu, l = _unpack_cholesky_lambda(lam[best_index], dim)
+    l = _regularize_triangular_factor(l)
     covariance = l @ l.T
     covariance = ensure_spd(covariance)
     return GaussianApproximation(
@@ -129,30 +139,108 @@ def fit_fgvi_to_gaussian(
     rank: int,
     seed: int = 123,
     max_iter: int = 1000,
+    n_samples: int = 25,
+    learning_rate: float = 0.03,
+    beta1: float = 0.9,
+    beta2: float = 0.999,
+    window: int = 50,
+    max_patience: int = 50,
 ) -> GaussianApproximation:
     mean = np.asarray(mean, dtype=float)
     covariance = ensure_spd(covariance)
-    eigvals, eigvecs = np.linalg.eigh(covariance)
-    order = np.argsort(eigvals)[::-1]
-    eigvals = eigvals[order]
-    eigvecs = eigvecs[:, order]
-    rank = min(rank, covariance.shape[0])
+    rng = np.random.default_rng(seed)
+    dim = covariance.shape[0]
+    rank = min(rank, dim)
+    precision = np.linalg.inv(covariance)
+    logdet_target = np.linalg.slogdet(covariance)[1]
 
-    top_vals = np.clip(eigvals[:rank], 0.0, None)
-    top_vecs = eigvecs[:, :rank]
-    b = top_vecs @ np.diag(np.sqrt(top_vals))
-    low_rank = b @ b.T
-    diagonal_residual = np.clip(np.diag(covariance - low_rank), 1e-8, None)
-    q_cov = ensure_spd(low_rank + np.diag(diagonal_residual))
+    mu = np.zeros(dim, dtype=float)
+    b = rng.normal(scale=0.01, size=(dim, rank))
+    log_diag = np.zeros(dim, dtype=float)
+    lower_bounds = np.full(max_iter, -np.inf, dtype=float)
+    averaged_lb = np.full(max_iter, -np.inf, dtype=float)
+
+    params = (mu, b, log_diag)
+    first_moments = [np.zeros_like(param) for param in params]
+    second_moments = [np.zeros_like(param) for param in params]
+    best = tuple(param.copy() for param in params)
+    best_index = 0
+    patience = 0
+    last_iter = 0
+
+    def covariance_from_factor(factor: np.ndarray, log_std: np.ndarray) -> np.ndarray:
+        diag_var = np.exp(2.0 * np.clip(log_std, -20.0, 20.0))
+        return ensure_spd(factor @ factor.T + np.diag(diag_var))
+
+    def inverse_and_entropy_terms(factor: np.ndarray, log_std: np.ndarray) -> tuple[np.ndarray, float]:
+        diag_var = np.exp(2.0 * np.clip(log_std, -20.0, 20.0))
+        inv_diag = 1.0 / diag_var
+        middle = np.eye(rank) + factor.T @ (inv_diag[:, None] * factor)
+        middle_inv = np.linalg.inv(middle)
+        inv_cov = np.diag(inv_diag) - (inv_diag[:, None] * factor) @ middle_inv @ (
+            factor.T * inv_diag[None, :]
+        )
+        logdet = float(np.sum(np.log(diag_var)) + np.linalg.slogdet(middle)[1])
+        return inv_cov, logdet
+
+    for t in range(1, max_iter + 1):
+        diag_std = np.exp(np.clip(log_diag, -20.0, 20.0))
+        inv_q, logdet_q = inverse_and_entropy_terms(b, log_diag)
+        z = rng.normal(size=(n_samples, rank))
+        eps = rng.normal(size=(n_samples, dim))
+        theta = mu + z @ b.T + eps * diag_std
+        centered = theta - mean
+        grad_logp = -(centered @ precision.T)
+
+        grad_mu = grad_logp.mean(axis=0)
+        grad_b = grad_logp.T @ z / n_samples + inv_q @ b
+        grad_diag_std = (grad_logp * eps).mean(axis=0) + np.diag(inv_q) * diag_std
+        grad_log_diag = grad_diag_std * diag_std
+
+        quad = np.einsum("ij,jk,ik->i", centered, precision, centered)
+        lower_bounds[t - 1] = float(
+            np.mean(-0.5 * (dim * np.log(2.0 * np.pi) + logdet_target + quad))
+            + 0.5 * (dim * (1.0 + np.log(2.0 * np.pi)) + logdet_q)
+        )
+
+        grads = (grad_mu, grad_b, grad_log_diag)
+        for idx, grad in enumerate(grads):
+            first_moments[idx] = beta1 * first_moments[idx] + (1.0 - beta1) * grad
+            second_moments[idx] = beta2 * second_moments[idx] + (1.0 - beta2) * grad**2
+            first_hat = first_moments[idx] / (1.0 - beta1**t)
+            second_hat = second_moments[idx] / (1.0 - beta2**t)
+            params[idx][...] = params[idx] + learning_rate * first_hat / (np.sqrt(second_hat) + 1e-8)
+
+        log_diag[...] = np.clip(log_diag, -10.0, 10.0)
+
+        if t >= window:
+            averaged_lb[t - 1] = lower_bounds[t - window : t].mean()
+            if averaged_lb[t - 1] >= averaged_lb[best_index]:
+                best_index = t - 1
+                best = tuple(param.copy() for param in params)
+                patience = 0
+            else:
+                patience += 1
+            if patience >= max_patience:
+                last_iter = t
+                break
+        else:
+            best = tuple(param.copy() for param in params)
+            best_index = t - 1
+        last_iter = t
+
+    mu, b, log_diag = best
+    q_cov = covariance_from_factor(b, log_diag)
 
     return GaussianApproximation(
-        mean=mean.copy(),
+        mean=mu,
         covariance=q_cov,
         metadata={
             "success": True,
-            "message": "spectral low-rank plus diagonal approximation",
+            "message": "stochastic factor Gaussian variational inference",
             "rank": rank,
-            "max_iter": max_iter,
+            "iterations": int(last_iter),
+            "best_index": int(best_index),
             "seed": seed,
         },
     )

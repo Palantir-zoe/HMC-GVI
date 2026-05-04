@@ -53,6 +53,31 @@ def ensure_spd(matrix: np.ndarray, jitter: float = 1e-8) -> np.ndarray:
     raise np.linalg.LinAlgError("Matrix could not be regularized to SPD.")
 
 
+def regularized_sample_covariance(
+    samples: np.ndarray,
+    fallback: np.ndarray | None = None,
+    shrinkage: float | None = None,
+) -> np.ndarray:
+    samples = np.asarray(samples, dtype=float)
+    finite_rows = samples[np.all(np.isfinite(samples), axis=1)]
+    dim = samples.shape[1]
+    if finite_rows.shape[0] < 2:
+        base = np.eye(dim) if fallback is None else np.asarray(fallback, dtype=float)
+        return ensure_spd(base)
+
+    covariance = np.cov(finite_rows, rowvar=False)
+    if not np.all(np.isfinite(covariance)):
+        base = np.eye(dim) if fallback is None else np.asarray(fallback, dtype=float)
+        return ensure_spd(base)
+
+    if shrinkage is None:
+        shrinkage = min(0.95, dim / (dim + finite_rows.shape[0]))
+    if shrinkage > 0.0:
+        diagonal = np.diag(np.clip(np.diag(covariance), 1e-8, None))
+        covariance = (1.0 - shrinkage) * covariance + shrinkage * diagonal
+    return ensure_spd(covariance)
+
+
 def draw_gaussian_covariance(
     dim: int,
     rng: np.random.Generator,

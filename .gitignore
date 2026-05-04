@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 *.sublime-workspace
+python_impl/results_exp_*.csv

@@ -98,6 +98,7 @@ def metropolis_within_gibbs_gaussian(
     time_budget_seconds: float,
     rng: np.random.Generator,
     init: Array | None = None,
+    min_iterations: int = 1,
 ) -> SamplerResult:
     precision = np.linalg.inv(covariance)
     dim = covariance.shape[0]
@@ -115,7 +116,7 @@ def metropolis_within_gibbs_gaussian(
     total = 0
     current_logp = log_density(x)
 
-    while time.perf_counter() - started < time_budget_seconds:
+    while time.perf_counter() - started < time_budget_seconds or len(rows) < min_iterations:
         proposal = x.copy()
         for j in range(dim):
             proposal[j] = x[j] + rng.normal(scale=step_size)
@@ -191,8 +192,7 @@ def hmc(
 ) -> SamplerResult:
     mass_matrix = ensure_spd(mass_matrix)
     dim = mass_matrix.shape[0]
-    inv_mass = np.linalg.inv(mass_matrix)
-    chol_precision = np.linalg.cholesky(inv_mass)
+    chol_mass = np.linalg.cholesky(mass_matrix)
     x = np.zeros(dim, dtype=float) if init is None else np.array(init, dtype=float)
     logp = log_density(x)
     samples = np.zeros((n_samples, dim), dtype=float)
@@ -200,7 +200,7 @@ def hmc(
     total = 0
 
     for step in range(n_samples + burn_in):
-        momentum = chol_precision.T @ rng.normal(size=dim)
+        momentum = np.linalg.solve(chol_mass.T, rng.normal(size=dim))
         logk = 0.5 * momentum @ mass_matrix @ momentum
 
         x_new = x.copy()
