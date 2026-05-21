@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hmc-gvi"
+version = "0.1.0"
+description = "Hamiltonian Monte Carlo with Gaussian variational covariance preconditioning experiments."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = [
+    "data",
+    "mcmc",
+    "metrics",
+    "result_io",
+    "targets",
+    "tuning",
+    "utils",
+    "vi",
+]

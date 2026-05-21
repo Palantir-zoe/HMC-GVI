@@ -1,5 +1,14 @@
 .vscode/
+.venv/
 __pycache__/
 *.pyc
-*.sublime-workspace
-python_impl/results_exp_*.csv
+*.pyo
+*.pyd
+*.egg-info/
+*.sublime-*
+.pytest_cache/
+.mypy_cache/
+.Rhistory
+
+# Long experiment logs are generated locally.
+results/logs/
