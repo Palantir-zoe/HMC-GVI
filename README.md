@@ -22,7 +22,8 @@ chains by default.
 - `scripts/run_gaussian100_matched.py`: reported 100-dimensional Gaussian
   HMC/HMC-GVI comparison.
 - `scripts/run_glmm_hmc_comparison.py`: reported GLMM HMC/HMC-GVI comparison.
-- `data/`: CSV datasets used by the experiments.
+- `data/`: CSV datasets used by the experiments; see `data/README.md` for
+  source and license notes.
 - `results/`: curated result tables.
 
 ## Setup
