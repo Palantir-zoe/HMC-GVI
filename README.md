@@ -19,10 +19,9 @@ chains by default.
 - `src/data.py`: dataset loaders.
 - `scripts/run_all_repeats.py`: repeated comparison tables for the logistic
   regression, Gaussian, and GLMM examples.
-- `scripts/run_gaussian100_matched.py`: matched 100-dimensional Gaussian
-  HMC/HMC-GVI comparison with the same main-stage `epsilon` and `L`.
-- `scripts/run_glmm_hmc_comparison.py`: GLMM HMC baseline and fixed HMC-GVI
-  comparison.
+- `scripts/run_gaussian100_matched.py`: reported 100-dimensional Gaussian
+  HMC/HMC-GVI comparison.
+- `scripts/run_glmm_hmc_comparison.py`: reported GLMM HMC/HMC-GVI comparison.
 - `data/`: CSV datasets used by the experiments.
 - `results/`: curated result tables.
 
@@ -52,6 +51,9 @@ The paper-scale settings use `n_samples=1,000,000`, `burn_in=10,000`, and
 `base_seed=123`. Runtime depends strongly on hardware, especially for the GLMM
 example.
 
+Hyperparameters are selected before the final sampling runs and then kept
+unchanged during sampling, so no adaptation is performed on the retained chains.
+
 Run the full repeated comparison table:
 
 ```bash
@@ -70,24 +72,20 @@ python scripts/run_all_repeats.py --repeats 3 --targets gaussian_100d
 python scripts/run_all_repeats.py --repeats 3 --targets glmm
 ```
 
-Reproduce the matched 100-dimensional Gaussian HMC/HMC-GVI comparison:
+Reproduce the reported 100-dimensional Gaussian HMC/HMC-GVI comparison:
 
 ```bash
 python scripts/run_gaussian100_matched.py \
   --repeats 3 \
-  --epsilon 0.16 \
-  --leapfrog 10 \
   --output results/gaussian100_matched_hmc_20260627.csv \
   --summary-output results/gaussian100_matched_hmc_20260627_summary.csv
 ```
 
-Reproduce the GLMM HMC and fixed HMC-GVI comparison:
+Reproduce the reported GLMM HMC/HMC-GVI comparison:
 
 ```bash
 python scripts/run_glmm_hmc_comparison.py \
   --repeats 3 \
-  --hmc-gvi-epsilon 0.072 \
-  --hmc-gvi-leapfrog 24 \
   --output results/glmm_hmc_comparison_20260627.csv \
   --summary-output results/glmm_hmc_comparison_20260627_summary.csv
 ```

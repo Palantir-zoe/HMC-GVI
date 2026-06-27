@@ -39,7 +39,7 @@ def parse_methods(text: str) -> set[str]:
     return methods
 
 
-def run_fixed_hmc_gvi(
+def run_pilot_selected_hmc_gvi(
     *,
     repeat: int,
     base_seed: int,
@@ -60,7 +60,7 @@ def run_fixed_hmc_gvi(
 
     seed = method_seed(base_seed, repeat, "HMC-GVI", 4_000)
     rng = set_seed(seed)
-    method_cfg = {**cfg, "tuning_profile": f"fixed_eps{epsilon:g}_L{leapfrog}"}
+    method_cfg = {**cfg, "tuning_profile": f"pilot_selected_eps{epsilon:g}_L{leapfrog}"}
     row = base_row(
         experiment="4.2.3_glmm",
         dataset="glmm_polypharmacy",
@@ -118,7 +118,7 @@ def run_fixed_hmc_gvi(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Reproduce the GLMM HMC baseline and fixed HMC-GVI comparison."
+        description="Reproduce the reported GLMM HMC/HMC-GVI comparison."
     )
     parser.add_argument("--output", type=str, default=str(REPO_ROOT / "results" / "glmm_hmc_comparison.csv"))
     parser.add_argument(
@@ -180,7 +180,7 @@ def main() -> None:
                 methods={"HMC"},
             )
         if "HMC-GVI" in methods:
-            run_fixed_hmc_gvi(
+            run_pilot_selected_hmc_gvi(
                 repeat=repeat,
                 base_seed=args.base_seed,
                 cfg=cfg,

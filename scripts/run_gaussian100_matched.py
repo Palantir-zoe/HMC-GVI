@@ -37,15 +37,15 @@ def parse_methods(text: str) -> set[str]:
     return methods
 
 
-def run_hmc_fixed_main(
+def run_hmc_reported_main(
     *,
     repeat: int,
     base_seed: int,
     cfg: dict,
     output: Path,
     log_path: Path,
-    fixed_epsilon: float,
-    fixed_leapfrog: int,
+    main_epsilon: float,
+    main_leapfrog: int,
 ) -> None:
     if ("gaussian_100d", repeat, "HMC") in completed_methods(output):
         log_event(log_path, "method_skip", dataset="gaussian_100d", repeat=repeat, method="HMC")
@@ -71,7 +71,7 @@ def run_hmc_fixed_main(
         cfg=cfg,
     )
     row["target_seed"] = target_seed
-    row["tuning_profile"] = f"matched_fixed_eps{fixed_epsilon:g}_L{fixed_leapfrog}"
+    row["tuning_profile"] = f"matched_main_eps{main_epsilon:g}_L{main_leapfrog}"
     log_event(log_path, "method_start", dataset="gaussian_100d", repeat=repeat, method="HMC", seed=seed)
 
     start = now()
@@ -114,8 +114,8 @@ def run_hmc_fixed_main(
         logp,
         grad,
         mass,
-        fixed_epsilon,
-        fixed_leapfrog,
+        main_epsilon,
+        main_leapfrog,
         int(cfg["n_samples"]),
         int(cfg["burn_in"]),
         rng,
@@ -133,8 +133,8 @@ def run_hmc_fixed_main(
         "gvi_covariance_time": None,
         "samples": result.samples,
         "acceptance_rate": result.acceptance_rate,
-        "epsilon": fixed_epsilon,
-        "n_leapfrog": fixed_leapfrog,
+        "epsilon": main_epsilon,
+        "n_leapfrog": main_leapfrog,
         "tuning_time": tune_time,
         "extra": {
             "hmc_initial_epsilon": burn_tune.epsilon,
@@ -144,15 +144,15 @@ def run_hmc_fixed_main(
     append_method_result(output, log_path, row, payload)
 
 
-def run_hmc_gvi_fixed_main(
+def run_hmc_gvi_reported_main(
     *,
     repeat: int,
     base_seed: int,
     cfg: dict,
     output: Path,
     log_path: Path,
-    fixed_epsilon: float,
-    fixed_leapfrog: int,
+    main_epsilon: float,
+    main_leapfrog: int,
 ) -> None:
     if ("gaussian_100d", repeat, "HMC-GVI") in completed_methods(output):
         log_event(log_path, "method_skip", dataset="gaussian_100d", repeat=repeat, method="HMC-GVI")
@@ -178,7 +178,7 @@ def run_hmc_gvi_fixed_main(
         cfg=cfg,
     )
     row["target_seed"] = target_seed
-    row["tuning_profile"] = f"matched_fixed_eps{fixed_epsilon:g}_L{fixed_leapfrog}"
+    row["tuning_profile"] = f"matched_main_eps{main_epsilon:g}_L{main_leapfrog}"
     log_event(log_path, "method_start", dataset="gaussian_100d", repeat=repeat, method="HMC-GVI", seed=seed)
 
     start = now()
@@ -197,8 +197,8 @@ def run_hmc_gvi_fixed_main(
         logp,
         grad,
         approx.covariance,
-        fixed_epsilon,
-        fixed_leapfrog,
+        main_epsilon,
+        main_leapfrog,
         int(cfg["n_samples"]),
         int(cfg["burn_in"]),
         rng,
@@ -216,8 +216,8 @@ def run_hmc_gvi_fixed_main(
         "gvi_covariance_time": gvi_time,
         "samples": result.samples,
         "acceptance_rate": result.acceptance_rate,
-        "epsilon": fixed_epsilon,
-        "n_leapfrog": fixed_leapfrog,
+        "epsilon": main_epsilon,
+        "n_leapfrog": main_leapfrog,
         "tuning_time": 0.0,
         "extra": {
             "gvi_iterations": approx.metadata.get("iterations"),
@@ -229,7 +229,7 @@ def run_hmc_gvi_fixed_main(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Reproduce the matched 100-dimensional Gaussian HMC/HMC-GVI comparison."
+        description="Reproduce the reported 100-dimensional Gaussian HMC/HMC-GVI comparison."
     )
     parser.add_argument("--output", type=str, default=str(REPO_ROOT / "results" / "gaussian100_matched_hmc.csv"))
     parser.add_argument(
@@ -288,24 +288,24 @@ def main() -> None:
     )
     for repeat in range(1, args.repeats + 1):
         if "HMC" in methods:
-            run_hmc_fixed_main(
+            run_hmc_reported_main(
                 repeat=repeat,
                 base_seed=args.base_seed,
                 cfg=cfg,
                 output=output,
                 log_path=log_path,
-                fixed_epsilon=args.epsilon,
-                fixed_leapfrog=args.leapfrog,
+                main_epsilon=args.epsilon,
+                main_leapfrog=args.leapfrog,
             )
         if "HMC-GVI" in methods:
-            run_hmc_gvi_fixed_main(
+            run_hmc_gvi_reported_main(
                 repeat=repeat,
                 base_seed=args.base_seed,
                 cfg=cfg,
                 output=output,
                 log_path=log_path,
-                fixed_epsilon=args.epsilon,
-                fixed_leapfrog=args.leapfrog,
+                main_epsilon=args.epsilon,
+                main_leapfrog=args.leapfrog,
             )
         write_summary(output, summary_output)
 
