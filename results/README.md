@@ -8,6 +8,9 @@ The samplers do not save raw chains by default.
 - `gaussian100_matched_hmc_20260627.csv` and
   `gaussian100_matched_hmc_20260627_summary.csv` record the reported
   HMC/HMC-GVI comparison for the 100-dimensional Gaussian target.
+- `glmm_hmc_comparison_20260627.csv` and
+  `glmm_hmc_comparison_20260627_summary.csv` record the reported HMC/HMC-GVI
+  comparison for the 509-dimensional GLMM example.
 
 Intermediate tuning grids, smoke-test files, server logs, and one-off debug
 outputs are ignored by Git.
