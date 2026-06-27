@@ -9,6 +9,22 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .Rhistory
+build/
+dist/
+htmlcov/
+.coverage
+*.pdf
 
 # Long experiment logs are generated locally.
 results/logs/
+
+# Intermediate tuning and server-run result files. The repository keeps only
+# curated summary CSVs needed to document the paper-scale runs.
+results/fgvi_100d_*.csv
+results/gaussian100_hmc_fixed_eps016_L10_*.csv
+results/gaussian100_hmc_gvi_fixed_eps016_L10_*.csv
+results/gaussian100_hmc_gvi_grid_*.csv
+results/overnight_*.csv
+results/refresh_*.csv
+results/server_*.csv
+results/smoke*.csv

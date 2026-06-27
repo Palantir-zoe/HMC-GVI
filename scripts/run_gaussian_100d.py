@@ -40,7 +40,7 @@ SETTINGS = {
     "burn_cov_shrinkage": 0.0,
     "fgvi_rank": 5,
     "fgvi_max_iter": 1000,
-    "fgvi_n_samples": 25,
+    "fgvi_n_samples": 500,
 }
 
 
@@ -50,7 +50,7 @@ RETUNED_SETTINGS = {
     "hmc_eval_steps": 400,
     "hmc_leapfrog_candidates": (4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48),
     "fgvi_max_iter": 5000,
-    "fgvi_n_samples": 100,
+    "fgvi_n_samples": 1000,
 }
 
 

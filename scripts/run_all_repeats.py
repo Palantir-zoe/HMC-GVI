@@ -54,7 +54,7 @@ SETTINGS = {
     "pima_hmc_gvi_leapfrog_candidates": (4, 6, 8, 10, 12, 16, 20, 24),
     "gaussian_fgvi_rank": 5,
     "gaussian_fgvi_max_iter": 7_500,
-    "gaussian_fgvi_n_samples": 150,
+    "gaussian_fgvi_n_samples": 1_000,
     "glmm_gvi_max_iter": 20_000,
     "glmm_gvi_lb_window": 10_000,
     "glmm_gvi_max_patience": 50,

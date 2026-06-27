@@ -1,0 +1,3 @@
+"experiment","dataset","method","repeats","time_sec_mean","sampling_time_sec_mean","burn_covariance_time_sec_mean","gvi_covariance_time_sec_mean","ess_mean_mean","efficiency_mean","p_jump_mean","rho1_mean","epsilon_mean","L_mean"
+"4.2.2_gaussian_100d","gaussian_100d","HMC","3","297.829278438042","245.179668635596","52.649609802446",,"937167.034969373","0.937167034969373","0.974443564356436","-0.00221578103197335","0.16","10"
+"4.2.2_gaussian_100d","gaussian_100d","HMC-GVI","3","213.058449708857","207.862889135877",,"5.19556057297935","988358.535195628","0.988358535195628","0.974408910891089","-0.00673286724228793","0.16","10"
